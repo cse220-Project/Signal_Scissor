@@ -921,7 +921,7 @@ class SignalScissorsApp:
         return data if data.ndim == 1 else np.mean(data, axis=1)
 
     @staticmethod
-    def _reduce(time_axis, values, maximum=8000):
+    def _reduce(time_axis, values, maximum=1500):
         if len(values) <= maximum:
             return time_axis, values
         step = max(1, len(values) // maximum)
@@ -962,6 +962,13 @@ class SignalScissorsApp:
         # Transform to dB for the visual scale used by the reference interface.
         source_db = 20 * np.log10(np.maximum(np.abs(magnitude), 1e-9))
         output_db = 20 * np.log10(np.maximum(np.abs(p_magnitude), 1e-9))
+        # Decimate spectrum for smooth canvas blitting
+        if len(freqs) > 1200:
+            step = max(1, len(freqs) // 1200)
+            freqs = freqs[::step]
+            source_db = source_db[::step]
+            p_freqs = p_freqs[::step]
+            output_db = output_db[::step]
         self.ax_spectrum.plot(freqs, source_db, color=CYAN, linewidth=0.75, alpha=0.9)
         self.ax_spectrum.plot(p_freqs, output_db, color=PURPLE, linewidth=0.75, alpha=0.88)
         if self._last_band:
@@ -978,12 +985,15 @@ class SignalScissorsApp:
         self._draw_waveform(self.ax_original, self.signal, CYAN, selection=True)
         self._draw_spectrum()
         self._draw_waveform(self.ax_processed, self.processed, MAGENTA)
-        for figure in (self.fig_original, self.fig_spectrum, self.fig_processed):
-            figure.tight_layout(pad=1.2)
+        if not getattr(self, "_layout_initialized", False):
+            for figure in (self.fig_original, self.fig_spectrum, self.fig_processed):
+                figure.tight_layout(pad=1.2)
+            self._layout_initialized = True
         self.canvas_original.draw_idle()
         self.canvas_spectrum.draw_idle()
         self.canvas_processed.draw_idle()
         self._update_readouts()
+
 
     def _update_readouts(self):
         source = self._display_channel(self.signal)
