@@ -1,0 +1,13 @@
+# Signal Scissors - CSE 220 Audio DSP Studio dependencies
+
+# Core DSP & Audio
+numpy>=1.24.0
+scipy>=1.10.0
+matplotlib>=3.7.0
+sounddevice>=0.4.6
+
+# Backend & API Server
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+pydantic>=2.0.0

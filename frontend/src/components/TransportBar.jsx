@@ -26,11 +26,11 @@ export default function TransportBar({
   const activeDots = Math.round(Math.min(1, Math.max(0, vuLevel)) * TOTAL_DOTS);
 
   return (
-    <div className="glass-panel" style={{
+    <div className="glass-panel workstation-player" style={{
       padding: '10px 20px',
       borderRadius: 'var(--radius-pill)',
-      border: '1px solid rgba(200, 190, 250, 0.16)',
-      background: 'rgba(21, 17, 48, 0.80)'
+      border: '1px solid rgba(31, 35, 40, 0.16)',
+      background: 'rgba(250, 249, 246, 0.80)'
     }}>
       <div className="transport-inner">
 
@@ -43,8 +43,8 @@ export default function TransportBar({
               width: '40px', height: '40px', borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '1px solid',
-              borderColor: isPlaying ? 'var(--lavender-tonic-hover)' : 'rgba(200,190,250,0.28)',
-              background: isPlaying ? 'var(--lavender-tonic)' : 'rgba(200,190,250,0.08)',
+              borderColor: isPlaying ? 'var(--lavender-tonic-hover)' : 'rgba(31, 35, 40, 0.28)',
+              background: isPlaying ? 'var(--lavender-tonic)' : 'rgba(31, 35, 40, 0.08)',
               color: isPlaying ? 'var(--champion-blue)' : 'var(--text-primary)',
               boxShadow: isPlaying ? 'var(--shadow-glow-lavender)' : 'none',
               cursor: 'pointer',
@@ -63,20 +63,20 @@ export default function TransportBar({
             style={{
               width: '34px', height: '34px', borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '1px solid rgba(200,190,250,0.15)',
-              background: 'rgba(200,190,250,0.06)',
+              border: '1px solid rgba(31, 35, 40, 0.15)',
+              background: 'rgba(31, 35, 40, 0.06)',
               color: 'var(--text-muted)',
               cursor: 'pointer',
               transition: 'var(--transition-fast)'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(200,190,250,0.14)';
-              e.currentTarget.style.borderColor = 'rgba(200,190,250,0.3)';
+              e.currentTarget.style.background = 'rgba(31, 35, 40, 0.14)';
+              e.currentTarget.style.borderColor = 'rgba(31, 35, 40, 0.3)';
               e.currentTarget.style.color = 'var(--text-primary)';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(200,190,250,0.06)';
-              e.currentTarget.style.borderColor = 'rgba(200,190,250,0.15)';
+              e.currentTarget.style.background = 'rgba(31, 35, 40, 0.06)';
+              e.currentTarget.style.borderColor = 'rgba(31, 35, 40, 0.15)';
               e.currentTarget.style.color = 'var(--text-muted)';
             }}
           >
@@ -108,7 +108,7 @@ export default function TransportBar({
                 onMouseEnter={e => {
                   if (!isActive) {
                     e.currentTarget.style.color = 'var(--text-secondary)';
-                    e.currentTarget.style.background = 'rgba(200,190,250,0.1)';
+                    e.currentTarget.style.background = 'rgba(31, 35, 40, 0.1)';
                   }
                 }}
                 onMouseLeave={e => {
@@ -127,13 +127,13 @@ export default function TransportBar({
         {/* ── Pixel Clock ──────────────────────── */}
         <div style={{
           fontFamily: 'var(--font-pixel)', fontSize: '20px',
-          color: activeTrack === 'processed' ? '#DDD6FE' : 'var(--lavender-tonic)',
+          color: activeTrack === 'processed' ? '#1f2328' : 'var(--lavender-tonic)',
           letterSpacing: '0.08em', whiteSpace: 'nowrap',
           padding: '3px 12px',
-          background: 'rgba(10, 8, 28, 0.90)',
+          background: 'rgba(250, 249, 246, 0.90)',
           borderRadius: 'var(--radius-xs)',
-          border: '1px solid rgba(200,190,250,0.14)',
-          textShadow: '0 0 10px rgba(200,190,250,0.4)',
+          border: '1px solid rgba(31, 35, 40, 0.14)',
+          textShadow: '0 0 10px rgba(31, 35, 40, 0.4)',
           flexShrink: 0
         }}>
           {formatTime(currentTime)}

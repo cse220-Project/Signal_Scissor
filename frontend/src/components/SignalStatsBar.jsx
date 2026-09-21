@@ -5,12 +5,12 @@ export default function SignalStatsBar({ stats = null, sourceName = "" }) {
   if (!stats) return null;
 
   return (
-    <footer style={{
+    <footer className="workstation-metrics" style={{
       position: 'relative',
       zIndex: 20,
-      background: 'rgba(5, 8, 17, 0.75)',
+      background: 'rgba(250, 249, 246, 0.75)',
       backdropFilter: 'blur(20px)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+      borderTop: '1px solid rgba(31, 35, 40, 0.06)',
       padding: '8px 28px',
       display: 'flex',
       alignItems: 'center',
@@ -24,7 +24,7 @@ export default function SignalStatsBar({ stats = null, sourceName = "" }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Disc size={13} color="var(--aurora-cyan)" />
           <span style={{ color: 'var(--text-secondary)' }}>Source:</span>
-          <span style={{ color: '#FFFFFF', fontWeight: '600' }}>{sourceName}</span>
+          <span style={{ color: '#1f2328', fontWeight: '600' }}>{sourceName}</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -42,7 +42,7 @@ export default function SignalStatsBar({ stats = null, sourceName = "" }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
         <div>
           <span style={{ color: 'var(--text-secondary)' }}>RMS Level: </span>
-          <span style={{ color: '#F1F5F9', fontWeight: '700' }}>{stats.rms.toFixed(4)}</span>
+          <span style={{ color: '#1f2328', fontWeight: '700' }}>{stats.rms.toFixed(4)}</span>
         </div>
 
         <div>
@@ -53,7 +53,7 @@ export default function SignalStatsBar({ stats = null, sourceName = "" }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Activity size={13} color="var(--aurora-purple)" />
           <span style={{ color: 'var(--text-secondary)' }}>Dominant Peak: </span>
-          <span style={{ color: '#C084FC', fontWeight: '700' }}>{stats.dominant_freq.toFixed(1)} Hz</span>
+          <span style={{ color: '#45404f', fontWeight: '700' }}>{stats.dominant_freq.toFixed(1)} Hz</span>
         </div>
       </div>
     </footer>

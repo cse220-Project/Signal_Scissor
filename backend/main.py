@@ -30,6 +30,7 @@ def run_legacy_gui():
     legacy_main()
 
 def run_react_studio():
+    # pyrefly: ignore [missing-import]
     import uvicorn
     from server import app
 

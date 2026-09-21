@@ -26,7 +26,7 @@ export default function SpectrumVisualizer({
     const h = canvas.height;
 
     // Champion Blue background
-    ctx.fillStyle = '#151130';
+    ctx.fillStyle = '#e5e3e8';
     ctx.fillRect(0, 0, width, h);
 
     const minDb = -80;
@@ -35,10 +35,10 @@ export default function SpectrumVisualizer({
 
     // Horizontal dB reference lines
     const dbTicks = [-60, -40, -20, 0];
-    ctx.strokeStyle = 'rgba(200, 190, 250, 0.07)';
+    ctx.strokeStyle = 'rgba(31, 35, 40, 0.07)';
     ctx.lineWidth = 1;
     ctx.font = '10px Archivo, sans-serif';
-    ctx.fillStyle = 'rgba(200, 190, 250, 0.3)';
+    ctx.fillStyle = 'rgba(31, 35, 40, 0.3)';
 
     dbTicks.forEach((db) => {
       const y = h - ((db - minDb) / dbRange) * h;
@@ -68,11 +68,11 @@ export default function SpectrumVisualizer({
       const highX = Math.max(0, Math.min(width, (band[1] / nyquist) * width));
       const bandW = highX - lowX;
 
-      const bandColor = bandOperation === 'cut' ? '#F472B6' : (bandOperation === 'keep' ? '#C8BEFA' : '#A78BFA');
+      const bandColor = bandOperation === 'cut' ? '#b94a48' : (bandOperation === 'keep' ? '#59636e' : '#45404f');
 
-      ctx.fillStyle = bandOperation === 'cut' 
-        ? 'rgba(244, 114, 182, 0.14)' 
-        : (bandOperation === 'keep' ? 'rgba(200, 190, 250, 0.16)' : 'rgba(167, 139, 250, 0.18)');
+      ctx.fillStyle = bandOperation === 'cut'
+        ? 'rgba(185, 74, 72, 0.14)'
+        : (bandOperation === 'keep' ? 'rgba(31, 35, 40, 0.16)' : 'rgba(69, 64, 79, 0.18)');
       ctx.fillRect(lowX, 0, bandW, h);
 
       ctx.strokeStyle = bandColor;
@@ -89,7 +89,7 @@ export default function SpectrumVisualizer({
       ctx.fillRect(highX - 2, 0, 4, 16);
 
       ctx.font = '10px Archivo, sans-serif';
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = '#1f2328';
       ctx.fillText(
         `Band: ${band[0].toFixed(0)} - ${band[1].toFixed(0)} Hz [${bandOperation.toUpperCase()}]`,
         Math.max(12, lowX + 6),
@@ -145,9 +145,9 @@ export default function SpectrumVisualizer({
     if (originalSpectrum) {
       renderCurve(
         originalSpectrum,
-        '#C8BEFA',
-        'rgba(200, 190, 250, 0.28)',
-        'rgba(200, 190, 250, 0.0)',
+        '#59636e',
+        'rgba(31, 35, 40, 0.28)',
+        'rgba(31, 35, 40, 0.0)',
         0.95
       );
     }
@@ -156,9 +156,9 @@ export default function SpectrumVisualizer({
     if (processedSpectrum) {
       renderCurve(
         processedSpectrum,
-        '#A78BFA',
-        'rgba(167, 139, 250, 0.28)',
-        'rgba(167, 139, 250, 0.0)',
+        '#45404f',
+        'rgba(69, 64, 79, 0.28)',
+        'rgba(69, 64, 79, 0.0)',
         0.88
       );
     }
@@ -166,7 +166,7 @@ export default function SpectrumVisualizer({
     // Hover tooltip
     if (hoverData) {
       const hoverX = (hoverData.freq / nyquist) * width;
-      ctx.strokeStyle = 'rgba(200, 190, 250, 0.35)';
+      ctx.strokeStyle = 'rgba(31, 35, 40, 0.35)';
       ctx.setLineDash([2, 2]);
       ctx.beginPath();
       ctx.moveTo(hoverX, 0);
@@ -174,12 +174,12 @@ export default function SpectrumVisualizer({
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.fillStyle = 'rgba(21, 17, 48, 0.95)';
+      ctx.fillStyle = 'rgba(250, 249, 246, 0.95)';
       ctx.fillRect(Math.min(width - 125, Math.max(8, hoverX - 60)), 26, 120, 22);
-      ctx.strokeStyle = 'rgba(200, 190, 250, 0.3)';
+      ctx.strokeStyle = 'rgba(31, 35, 40, 0.3)';
       ctx.strokeRect(Math.min(width - 125, Math.max(8, hoverX - 60)), 26, 120, 22);
 
-      ctx.fillStyle = '#C8BEFA';
+      ctx.fillStyle = '#59636e';
       ctx.font = '10px Archivo, sans-serif';
       ctx.fillText(
         `${hoverData.freq.toFixed(0)}Hz · ${hoverData.db.toFixed(1)}dB`,
@@ -248,18 +248,18 @@ export default function SpectrumVisualizer({
   };
 
   return (
-    <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', height: `${height}px` }}>
+    <div className="glass-panel workstation-spectrum" style={{ display: 'flex', flexDirection: 'column', height: `${height}px` }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '10px 18px',
-        borderBottom: '1px solid rgba(200, 190, 250, 0.08)',
-        background: 'rgba(21, 17, 48, 0.65)'
+        borderBottom: '1px solid rgba(31, 35, 40, 0.08)',
+        background: 'rgba(250, 249, 246, 0.65)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <SlidersHorizontal size={14} color="var(--lavender-tonic)" />
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: '700', letterSpacing: '0.01em', color: '#FFFFFF' }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: '700', letterSpacing: '0.01em', color: '#1f2328' }}>
             Fourier Transform Spectrum Analyzer
           </span>
           <span className="swiss-tag" style={{ color: 'var(--lavender-tonic)', marginLeft: '4px' }}>
@@ -279,8 +279,8 @@ export default function SpectrumVisualizer({
         </div>
       </div>
 
-      <div 
-        ref={containerRef} 
+      <div
+        ref={containerRef}
         style={{ flex: 1, position: 'relative', cursor: isDraggingBand ? 'ew-resize' : 'crosshair', overflow: 'hidden' }}
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}

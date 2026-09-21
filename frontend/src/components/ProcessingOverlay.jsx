@@ -34,17 +34,17 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
       frameRef.current += 1;
       const t = frameRef.current;
 
-      ctx.fillStyle = 'rgba(15, 12, 34, 0.96)';
+      ctx.fillStyle = 'rgba(250, 249, 246, 0.96)';
       ctx.fillRect(0, 0, W, H);
 
       // Scanline texture
       for (let y = 0; y < H; y += 3) {
-        ctx.fillStyle = 'rgba(200, 190, 250, 0.02)';
+        ctx.fillStyle = 'rgba(31, 35, 40, 0.02)';
         ctx.fillRect(0, y, W, 1);
       }
 
       // Pixel grid
-      ctx.strokeStyle = 'rgba(200, 190, 250, 0.04)';
+      ctx.strokeStyle = 'rgba(31, 35, 40, 0.04)';
       ctx.lineWidth = 1;
       for (let x = 0; x < W; x += 8) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
@@ -55,9 +55,9 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
 
       // Aurora glow orbs
       const orbs = [
-        { x: W * 0.22, y: H * 0.4, r: 80, color: '#C8BEFA', phase: 0 },
-        { x: W * 0.78, y: H * 0.5, r: 90, color: '#A78BFA', phase: 2 },
-        { x: W * 0.5,  y: H * 0.8, r: 70, color: '#5EEAD4', phase: 4 },
+        { x: W * 0.22, y: H * 0.4, r: 80, color: '#59636e', phase: 0 },
+        { x: W * 0.78, y: H * 0.5, r: 90, color: '#45404f', phase: 2 },
+        { x: W * 0.5,  y: H * 0.8, r: 70, color: '#3f7856', phase: 4 },
       ];
       orbs.forEach(({ x, y, r, color, phase }) => {
         const pulse = 0.12 + 0.06 * Math.sin((t + phase * 20) * 0.04);
@@ -88,7 +88,7 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
         ctx.fillRect(xPos, H / 2 - barH / 2, barW, barH);
 
         // Pixel top cap
-        ctx.fillStyle = '#C8BEFA';
+        ctx.fillStyle = '#59636e';
         ctx.fillRect(xPos, H / 2 - barH / 2 - 2, barW, 2);
       }
 
@@ -102,10 +102,10 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
   if (!isVisible) return null;
 
   return (
-    <div style={{
+    <div className="workstation-processing" style={{
       position: 'fixed', inset: 0, zIndex: 9000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(10, 7, 24, 0.75)',
+      background: 'rgba(31, 35, 40, 0.3)',
       backdropFilter: 'blur(10px)',
       WebkitBackdropFilter: 'blur(10px)',
       animation: 'overlayIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -124,8 +124,8 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
           to   { transform: rotate(360deg); }
         }
         @keyframes pulseIcon {
-          0%, 100% { filter: drop-shadow(0 0 6px #C8BEFA88); }
-          50%       { filter: drop-shadow(0 0 18px #C8BEFAcc); }
+          0%, 100% { filter: drop-shadow(0 0 6px #59636e88); }
+          50%       { filter: drop-shadow(0 0 18px #59636ecc); }
         }
         @keyframes dotBounce {
           0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
@@ -134,11 +134,11 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
       `}</style>
 
       <div style={{
-        background: 'rgba(22, 17, 52, 0.96)',
+        background: 'rgba(250, 249, 246, 0.96)',
         backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-        border: '1px solid rgba(200, 190, 250, 0.22)',
+        border: '1px solid rgba(31, 35, 40, 0.22)',
         borderRadius: '24px',
-        boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(200,190,250,0.12), inset 0 1px 0 rgba(255,255,255,0.06)',
+        boxShadow: '0 32px 80px rgba(250, 249, 246, 0.8), 0 0 0 1px rgba(31, 35, 40, 0.12), inset 0 1px 0 rgba(31, 35, 40, 0.06)',
         width: '460px', maxWidth: '92vw',
         overflow: 'hidden',
         animation: 'cardIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -156,7 +156,7 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
             height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(200,190,250,0.4) 30%, rgba(200,190,250,0.4) 70%, transparent)'
+            background: 'linear-gradient(90deg, transparent, rgba(31, 35, 40, 0.4) 30%, rgba(31, 35, 40, 0.4) 70%, transparent)'
           }} />
         </div>
 
@@ -172,22 +172,22 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
               <div style={{
                 position: 'absolute', inset: 0, borderRadius: '50%',
                 border: '2px solid transparent',
-                borderTopColor: '#C8BEFA',
-                borderRightColor: 'rgba(200,190,250,0.3)',
+                borderTopColor: '#59636e',
+                borderRightColor: 'rgba(31, 35, 40, 0.3)',
                 animation: 'spinRing 1s linear infinite'
               }} />
               <div style={{
                 position: 'absolute', inset: '5px', borderRadius: '50%',
                 border: '1.5px solid transparent',
-                borderTopColor: '#A78BFA',
-                borderLeftColor: 'rgba(167,139,250,0.3)',
+                borderTopColor: '#45404f',
+                borderLeftColor: 'rgba(69, 64, 79, 0.3)',
                 animation: 'spinRing 1.5s linear infinite reverse'
               }} />
               {/* Icon center */}
               <div style={{
                 position: 'absolute', inset: '12px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--lavender-tonic, #C8BEFA)',
+                color: 'var(--lavender-tonic, #59636e)',
                 animation: 'pulseIcon 2s ease-in-out infinite'
               }}>
                 {meta.icon}
@@ -198,7 +198,7 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
               <div style={{
                 fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
                 fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em',
-                color: 'var(--lavender-tonic, #C8BEFA)', textTransform: 'uppercase',
+                color: 'var(--lavender-tonic, #59636e)', textTransform: 'uppercase',
                 marginBottom: '5px'
               }}>
                 ◉ PROCESSING
@@ -206,13 +206,13 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
               <h2 style={{
                 fontFamily: 'var(--font-display, Abril Fatface, serif)',
                 fontSize: '20px', fontWeight: '400',
-                color: '#FFFFFF', lineHeight: '1.2', marginBottom: '6px'
+                color: '#1f2328', lineHeight: '1.2', marginBottom: '6px'
               }}>
                 {meta.title}
               </h2>
               <p style={{
                 fontFamily: 'var(--font-sans, Archivo, sans-serif)',
-                fontSize: '12.5px', color: 'rgba(200,190,250,0.65)', lineHeight: '1.5'
+                fontSize: '12.5px', color: 'rgba(31, 35, 40, 0.65)', lineHeight: '1.5'
               }}>
                 {meta.sub}
               </p>
@@ -227,15 +227,15 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
               {[0, 1, 2, 3, 4].map(i => (
                 <div key={i} style={{
                   width: '7px', height: '7px', borderRadius: '50%',
-                  background: i < 3 ? 'var(--lavender-tonic, #C8BEFA)' : 'rgba(200,190,250,0.2)',
-                  boxShadow: i < 3 ? '0 0 6px #C8BEFA' : 'none',
+                  background: i < 3 ? 'var(--lavender-tonic, #59636e)' : 'rgba(31, 35, 40, 0.2)',
+                  boxShadow: i < 3 ? '0 0 6px #59636e' : 'none',
                   animation: `dotBounce 1.4s ease-in-out ${i * 0.16}s infinite`
                 }} />
               ))}
             </div>
             <span style={{
               fontFamily: 'var(--font-mono, monospace)', fontSize: '11px',
-              color: 'rgba(200,190,250,0.5)', letterSpacing: '0.06em'
+              color: 'rgba(31, 35, 40, 0.5)', letterSpacing: '0.06em'
             }}>
               Python DSP Engine Running…
             </span>
@@ -249,23 +249,23 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               fontFamily: 'var(--font-sans, Archivo, sans-serif)',
               fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em',
-              background: 'rgba(200,190,250,0.08)',
-              border: '1px solid rgba(200,190,250,0.25)',
+              background: 'rgba(31, 35, 40, 0.08)',
+              border: '1px solid rgba(31, 35, 40, 0.25)',
               borderRadius: '10px',
-              color: 'rgba(200,190,250,0.75)',
+              color: 'rgba(31, 35, 40, 0.75)',
               cursor: 'pointer',
               transition: 'all 0.18s ease'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(244,114,182,0.15)';
-              e.currentTarget.style.borderColor = 'rgba(244,114,182,0.5)';
-              e.currentTarget.style.color = '#F472B6';
-              e.currentTarget.style.boxShadow = '0 0 18px rgba(244,114,182,0.2)';
+              e.currentTarget.style.background = 'rgba(185, 74, 72, 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(185, 74, 72, 0.5)';
+              e.currentTarget.style.color = '#b94a48';
+              e.currentTarget.style.boxShadow = '0 0 18px rgba(185, 74, 72, 0.2)';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(200,190,250,0.08)';
-              e.currentTarget.style.borderColor = 'rgba(200,190,250,0.25)';
-              e.currentTarget.style.color = 'rgba(200,190,250,0.75)';
+              e.currentTarget.style.background = 'rgba(31, 35, 40, 0.08)';
+              e.currentTarget.style.borderColor = 'rgba(31, 35, 40, 0.25)';
+              e.currentTarget.style.color = 'rgba(31, 35, 40, 0.75)';
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
@@ -277,7 +277,7 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
           <p style={{
             textAlign: 'center', marginTop: '14px',
             fontFamily: 'var(--font-mono, monospace)',
-            fontSize: '10px', color: 'rgba(200,190,250,0.25)', letterSpacing: '0.06em'
+            fontSize: '10px', color: 'rgba(31, 35, 40, 0.25)', letterSpacing: '0.06em'
           }}>
             CSE 220 DSP ENGINE · FOURIER_FILTER.PY · AUDIO_EFFECTS.PY
           </p>

@@ -16,7 +16,7 @@ export default function ImpulseResponseModal({
     const height = canvas.height;
 
     // Deep space background
-    ctx.fillStyle = '#060B17';
+    ctx.fillStyle = '#f0ead8';
     ctx.fillRect(0, 0, width, height);
 
     const padLeft = 60;
@@ -28,7 +28,7 @@ export default function ImpulseResponseModal({
 
     // Zero-line
     const zeroY = padTop + plotHeight * 0.88;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.strokeStyle = 'rgba(31, 35, 40, 0.1)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padLeft, zeroY);
@@ -39,7 +39,7 @@ export default function ImpulseResponseModal({
 
     // Axis Labels
     ctx.font = '10px JetBrains Mono, monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillStyle = 'rgba(31, 35, 40, 0.4)';
     ctx.fillText('1.0', padLeft - 30, padTop + 10);
     ctx.fillText('0.5', padLeft - 30, padTop + plotHeight * 0.44);
     ctx.fillText('0.0', padLeft - 30, zeroY + 4);
@@ -63,7 +63,7 @@ export default function ImpulseResponseModal({
       const y = zeroY - stemHeight;
 
       // Stem line
-      ctx.strokeStyle = idx === 0 ? '#14F1D9' : '#F43F9E';
+      ctx.strokeStyle = idx === 0 ? '#3f7856' : '#b94a48';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(x, zeroY);
@@ -71,18 +71,18 @@ export default function ImpulseResponseModal({
       ctx.stroke();
 
       // Marker circle
-      ctx.fillStyle = idx === 0 ? '#14F1D9' : '#F43F9E';
+      ctx.fillStyle = idx === 0 ? '#3f7856' : '#b94a48';
       ctx.beginPath();
       ctx.arc(x, y, 5, 0, Math.PI * 2);
       ctx.fill();
 
       // Amplitude tag
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = '#1f2328';
       ctx.font = '10px JetBrains Mono, monospace';
       ctx.fillText(`${stem.amp.toFixed(2)}`, x - 12, y - 10);
 
       // Time tag
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.fillStyle = 'rgba(31, 35, 40, 0.5)';
       ctx.fillText(`${stem.t_ms.toFixed(0)}ms`, x - 16, zeroY + 18);
     });
   }, [isOpen, impulseData]);
@@ -97,8 +97,8 @@ export default function ImpulseResponseModal({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '18px 24px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          background: 'rgba(6, 11, 24, 0.6)'
+          borderBottom: '1px solid rgba(31, 35, 40, 0.08)',
+          background: 'rgba(250, 249, 246, 0.6)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Activity size={18} color="var(--aurora-magenta)" />
@@ -113,10 +113,10 @@ export default function ImpulseResponseModal({
 
         <div style={{ padding: '24px', overflowY: 'auto' }}>
           <div style={{
-            background: 'rgba(6, 10, 20, 0.6)',
+            background: 'rgba(250, 249, 246, 0.6)',
             padding: '14px 18px',
             borderRadius: 'var(--radius-sm)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(31, 35, 40, 0.08)',
             marginBottom: '18px'
           }}>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--aurora-cyan)', fontWeight: '700' }}>
@@ -127,14 +127,16 @@ export default function ImpulseResponseModal({
             </p>
           </div>
 
-          <div style={{ width: '100%', height: '270px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ width: '100%', height: '270px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid rgba(31, 35, 40, 0.08)' }}>
             <canvas ref={canvasRef} width="760" height="270" style={{ width: '100%', height: '100%', display: 'block' }} />
           </div>
 
-          <div style={{ display: 'flex', gap: '24px', marginTop: '18px', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-            <div>Sampling: <span style={{ color: '#FFFFFF' }}>{impulseData?.sample_rate || 8000} Hz</span></div>
-            <div>Delay Index (n₀): <span style={{ color: 'var(--aurora-blue)' }}>{impulseData?.delay_ms || 250} ms</span></div>
-            <div>Decay Factor (&alpha;): <span style={{ color: 'var(--aurora-magenta)' }}>{((impulseData?.decay || 0.5) * 100).toFixed(0)}%</span></div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginTop: '18px', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+            <div>Sampling: <span style={{ color: '#1f2328' }}>{impulseData?.sample_rate || 8000} Hz</span></div>
+            <div>Delay (n₀): <span style={{ color: 'var(--lavender-tonic)' }}>{impulseData?.delay_ms || 250} ms</span></div>
+            <div>Decay (&alpha;): <span style={{ color: 'var(--accent-violet)' }}>{((impulseData?.decay || 0.55) * 100).toFixed(0)}%</span></div>
+            <div>Echo Taps: <span style={{ color: '#1f2328' }}>{impulseData?.num_echoes || 3} repeats</span></div>
+            <div>Wet Mix: <span style={{ color: 'var(--lavender-tonic)' }}>{((impulseData?.wet_mix || 0.65) * 100).toFixed(0)}%</span></div>
           </div>
         </div>
       </div>

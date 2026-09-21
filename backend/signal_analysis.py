@@ -20,7 +20,6 @@ def rms(signal):
     """
     return float(np.sqrt(np.mean(signal ** 2)))
 
-
 def peak_amplitude(signal):
     """
     Peak amplitude of a signal.
@@ -28,7 +27,6 @@ def peak_amplitude(signal):
         Peak = max( |x[n]| )
     """
     return float(np.max(np.abs(signal)))
-
 
 def dominant_frequency(signal, fs):
     """
@@ -48,7 +46,6 @@ def dominant_frequency(signal, fs):
     freqs_no_dc = freqs[1:]
     peak_idx = np.argmax(mag_no_dc)
     return float(freqs_no_dc[peak_idx])
-
 
 if __name__ == "__main__":
     from signal_io import generate_test_signal

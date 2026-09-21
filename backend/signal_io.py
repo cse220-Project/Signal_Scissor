@@ -8,7 +8,28 @@ def generate_test_signal(duration=2.0, fs=8000, freqs=(200, 1000, 2500)):
     signal += 0.3 * np.random.randn(len(t))
     signal = signal / np.max(np.abs(signal))
     num_channels = 1  # synthetic test signal is always mono
-    return t, signal, fs, num_channels
+    return t, signal.astype(np.float32), fs, num_channels
+
+
+def generate_pulse_signal(duration=2.0, fs=8000, freq=440.0):
+    """
+    Generate an acoustic pulse burst followed by silence.
+    Ideal for demonstrating convolution echo and time-delay effects in lab evaluations.
+    """
+    t = np.linspace(0, duration, int(fs * duration), endpoint=False)
+    sig = np.zeros_like(t)
+
+    # 180 ms windowed sinusoidal pulse burst starting at t = 0.08s
+    pulse_len = int(0.18 * fs)
+    t_pulse = np.linspace(0, 0.18, pulse_len, endpoint=False)
+    window = 0.5 * (1 - np.cos(2 * np.pi * t_pulse / 0.18))
+    pulse = np.sin(2 * np.pi * freq * t_pulse) * window
+
+    start_idx = int(0.08 * fs)
+    sig[start_idx:start_idx + pulse_len] = pulse
+    sig += 0.005 * np.random.randn(len(t))
+    sig = (sig / np.max(np.abs(sig))).astype(np.float32)
+    return t, sig, fs, 1
 
 
 def load_wav(path):

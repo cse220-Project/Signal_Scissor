@@ -43,47 +43,52 @@ def time_shift(signal, fs, delay_ms):
     return shifted
 
 
-def get_echo_impulse_response(fs, delay_ms=250, decay=0.5, num_echoes=3):
+def get_echo_impulse_response(fs, delay_ms=250, decay=0.55, num_echoes=3, wet_mix=0.7):
     """
-    Construct the discrete impulse response h[n] for the echo system:
+    Construct the discrete impulse response h[n] for the acoustic echo system:
     y[n] = x[n] * h[n]
 
-    h[0] = 1.0 (direct signal)
-    h[k * n0] = decay^k for k = 1..num_echoes (decaying echoes spaced delay_ms apart)
+    h[0] = 1.0 (direct signal arrival)
+    h[k * n0] = wet_mix * (decay ^ k) for k = 1..num_echoes (decaying reflections spaced delay_ms apart)
 
     Returns (t_h, h) where t_h is the time vector in seconds.
     """
     n0 = int(round((delay_ms / 1000.0) * fs))
     if n0 <= 0:
-        return np.array([0.0]), np.array([1.0])
+        return np.array([0.0], dtype=np.float32), np.array([1.0], dtype=np.float32)
 
     h_length = n0 * num_echoes + 1
-    h = np.zeros(h_length)
+    h = np.zeros(h_length, dtype=np.float32)
     h[0] = 1.0
     for k in range(1, num_echoes + 1):
         idx = n0 * k
         if idx < h_length:
-            h[idx] = decay ** k
+            h[idx] = float(wet_mix * (decay ** k))
 
     t_h = np.arange(len(h)) / fs
     return t_h, h
 
 
-def convolution_echo(signal, fs, delay_ms=250, decay=0.5, num_echoes=3):
+def convolution_echo(signal, fs, delay_ms=250, decay=0.55, num_echoes=3, wet_mix=0.7):
     """
     Convolution-based echo effect: y[n] = x[n] * h[n]
 
     h[n] is built explicitly as decaying impulses spaced delay_ms apart.
-    np.convolve computes the full direct convolution sum y[n] = sum_k x[k] * h[n-k].
-    Output length is len(signal) + len(h) - 1, preserving the decaying echo tail.
+    np.convolve computes the full direct convolution sum:
+        y[n] = sum_k x[k] * h[n - k]
+    Output length is len(signal) + len(h) - 1, preserving the decaying reverberant tail.
     """
-    t_h, h = get_echo_impulse_response(fs, delay_ms=delay_ms, decay=decay, num_echoes=num_echoes)
+    t_h, h = get_echo_impulse_response(fs, delay_ms=delay_ms, decay=decay, num_echoes=num_echoes, wet_mix=wet_mix)
 
-    y = np.convolve(signal, h, mode="full")
+    y = np.convolve(signal, h, mode="full").astype(np.float32)
 
-    max_val = np.max(np.abs(y))
+    # Soft-clip with tanh instead of hard normalization.
+    # Hard normalization (y / max_val) squashes the entire signal,
+    # making echo reflections invisible in the waveform.
+    # tanh preserves the echo structure while keeping the output bounded.
+    max_val = float(np.max(np.abs(y)))
     if max_val > 1.0:
-        y = y / max_val
+        y = np.tanh(y).astype(np.float32)
 
     return y
 

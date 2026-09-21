@@ -8,23 +8,30 @@ Wraps authentic CSE 220 signal processing algorithms:
 """
 
 import io
+import logging
 import os
 import tempfile
 import numpy as np
 from scipy.io import wavfile
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from typing import Optional, List
+# pyrefly: ignore [missing-import]
+from fastapi import FastAPI, UploadFile, File, HTTPException  # type: ignore
+# pyrefly: ignore [missing-import]
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+# pyrefly: ignore [missing-import]
+from fastapi.responses import Response, FileResponse, JSONResponse  # type: ignore
+# pyrefly: ignore [missing-import]
+from fastapi.staticfiles import StaticFiles  # type: ignore
+# pyrefly: ignore [missing-import]
+from pydantic import BaseModel  # type: ignore
+from typing import Optional
 
-from signal_io import generate_test_signal, load_wav, save_wav
+from signal_io import generate_test_signal, generate_pulse_signal, load_wav, save_wav
 from fourier_filter import compute_spectrum, band_filter, process_band
 from audio_effects import scale_amplitude, time_shift, convolution_echo, get_echo_impulse_response
 from signal_analysis import rms, peak_amplitude, dominant_frequency
 
 app = FastAPI(title="Signal Scissors DSP Engine", version="2.0.0")
+logger = logging.getLogger(__name__)
 
 # Enable CORS for local Vite dev server
 app.add_middleware(
@@ -84,47 +91,44 @@ def frequency_shift(data, fs, shift_hz):
     raise ValueError("Audio data must be 1D or 2D array.")
 
 
-def pad_to_length(data, length):
-    data = np.asarray(data)
-    if data.shape[0] >= length:
-        return data[:length]
-    return np.pad(data, [(0, length - data.shape[0])] + [(0, 0)] * (data.ndim - 1), mode="constant")
-
-
-def blend_echo(dry, wet, mix):
-    length = max(np.asarray(dry).shape[0], np.asarray(wet).shape[0])
-    return pad_to_length(dry, length) * (1.0 - mix) + pad_to_length(wet, length) * mix
-
-
-def downsample_envelope(signal, max_points=1200):
+def downsample_envelope(signal, max_points=1200, target_length=None):
     """
     Downsamples a 1D signal into min/max peak envelope pairs for ultra-fast,
-    aliasing-free 60 FPS Canvas rendering.
+    aliasing-free 60 FPS Canvas rendering. When target_length is provided,
+    normalizes the time axis so multiple signals of different lengths (e.g. original vs echoed)
+    align to the exact same temporal grid.
     """
     n = len(signal)
-    if n <= max_points:
-        return {
-            "peaks": signal.tolist(),
-            "min_val": float(np.min(signal)),
-            "max_val": float(np.max(signal)),
-            "count": n
-        }
-    
-    bucket_size = n / (max_points / 2)
+    if target_length is None:
+        target_length = n
+
+    total_buckets = int(max_points / 2)
+    bucket_size = target_length / total_buckets
     peaks = []
-    for i in range(int(max_points / 2)):
+
+    for i in range(total_buckets):
         start = int(i * bucket_size)
-        end = int(min((i + 1) * bucket_size, n))
-        if start >= end:
+        end = int(min((i + 1) * bucket_size, target_length))
+        if start >= n:
+            # Signal has ended (e.g. original signal shorter than echo tail)
+            peaks.append(0.0)
+            peaks.append(0.0)
             continue
-        chunk = signal[start:end]
+
+        chunk_end = min(end, n)
+        if start >= chunk_end:
+            peaks.append(0.0)
+            peaks.append(0.0)
+            continue
+
+        chunk = signal[start:chunk_end]
         peaks.append(float(np.min(chunk)))
         peaks.append(float(np.max(chunk)))
-    
+
     return {
         "peaks": peaks,
-        "min_val": float(np.min(signal)),
-        "max_val": float(np.max(signal)),
+        "min_val": float(np.min(signal)) if n > 0 else 0.0,
+        "max_val": float(np.max(signal)) if n > 0 else 0.0,
         "count": len(peaks)
     }
 
@@ -175,8 +179,13 @@ def get_full_state_payload():
     if state.signal is None:
         return {"loaded": False}
 
-    orig_env = downsample_envelope(state.signal)
-    proc_env = downsample_envelope(state.processed) if state.processed is not None else orig_env
+    orig_len = len(state.signal)
+    proc_len = len(state.processed) if state.processed is not None else orig_len
+    max_len = max(orig_len, proc_len)
+    max_duration = float(max_len / state.fs)
+
+    orig_env = downsample_envelope(state.signal, max_points=1200, target_length=max_len)
+    proc_env = downsample_envelope(state.processed if state.processed is not None else state.signal, max_points=1200, target_length=max_len)
 
     orig_spec = compute_spectrum_payload(state.signal, state.fs)
     proc_spec = compute_spectrum_payload(state.processed, state.fs) if state.processed is not None else orig_spec
@@ -187,14 +196,18 @@ def get_full_state_payload():
         "loaded": True,
         "source_name": state.source_name,
         "sample_rate": state.fs,
-        "duration": float(len(state.signal) / state.fs),
+        "duration": max_duration,
+        "original_duration": float(orig_len / state.fs),
+        "processed_duration": float(proc_len / state.fs),
         "num_channels": state.num_channels,
-        "samples": len(state.signal),
+        "samples": orig_len,
+        "processed_samples": proc_len,
         "original_waveform": orig_env,
         "processed_waveform": proc_env,
         "original_spectrum": orig_spec,
         "processed_spectrum": proc_spec,
         "stats": stats,
+        "original_stats": get_signal_stats(state.signal, state.fs, state.num_channels),
         "last_band": state.last_band,
         "last_operation": state.last_operation
     }
@@ -208,13 +221,23 @@ def health():
     return {"status": "ok", "service": "Signal Scissors DSP API"}
 
 
+@app.get("/api/signal/state")
+def current_signal_state():
+    """Read the current session without generating or processing audio."""
+    return get_full_state_payload()
+
+
 @app.get("/api/signal/test")
 def load_test(preset: str = "tones"):
     """
-    Generate synthetic test signal using signal_io.generate_test_signal.
+    Generate synthetic test signal using signal_io.generate_test_signal or generate_pulse_signal.
     Supports preset frequencies for course lab demonstrations.
     """
-    if preset == "noise":
+    if preset == "pulse":
+        t, sig, fs, ch = generate_pulse_signal(duration=2.0, fs=8000, freq=440.0)
+        state.t, state.signal, state.fs, state.num_channels = t, sig, fs, ch
+        state.source_name = "Acoustic Pulse Burst (Echo Demo)"
+    elif preset == "noise":
         t = np.linspace(0, 2.0, int(8000 * 2.0), endpoint=False)
         sig = 0.5 * np.sin(2 * np.pi * 300 * t) + 0.5 * np.random.randn(len(t))
         sig = sig / np.max(np.abs(sig))
@@ -243,14 +266,28 @@ async def upload_audio(file: UploadFile = File(...)):
     """
     Upload and load a custom WAV audio file using signal_io.load_wav.
     """
-    suffix = os.path.splitext(file.filename)[1] or ".wav"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp_path = tmp.name
-
+    tmp_path = None
+    stage = "reading uploaded file"
     try:
-        t, data, fs, num_channels = load_wav(tmp_path)
+        content = await file.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="The uploaded WAV file is empty. Choose a non-empty WAV file.")
+
+        stage = "creating temporary file"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            tmp_path = tmp.name
+            tmp.write(content)
+
+        stage = "decoding WAV"
+        try:
+            t, data, fs, num_channels = load_wav(tmp_path)
+        except (ValueError, EOFError) as exc:
+            logger.warning("WAV upload rejected during decoding", exc_info=True)
+            raise HTTPException(status_code=400, detail="Could not decode the WAV file. It may be corrupt or use an unsupported encoding; try exporting it as PCM WAV.") from exc
+        if fs <= 0 or data.size == 0 or not np.all(np.isfinite(data)):
+            raise HTTPException(status_code=400, detail="The WAV file must contain finite audio samples and a positive sample rate.")
+
+        stage = "calculating waveform and metadata"
         state.t = t
         state.signal = data
         state.freq_processed = np.array(data, copy=True)
@@ -260,10 +297,21 @@ async def upload_audio(file: UploadFile = File(...)):
         state.source_name = file.filename
         state.last_band = None
         state.last_operation = None
-        return get_full_state_payload()
+        payload = get_full_state_payload()
+        stage = "serializing upload response"
+        return JSONResponse(content=payload)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # Keep internal paths and exception details in server logs, not responses.
+        logger.exception("WAV upload failed while %s", stage)
+        raise HTTPException(status_code=500, detail=f"Could not load the WAV file while {stage}. Check the backend logs for details.") from exc
     finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        if tmp_path is not None:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                logger.warning("Could not remove WAV upload temporary file", exc_info=True)
 
 
 class FilterRequest(BaseModel):
@@ -311,11 +359,13 @@ def apply_filter(req: FilterRequest):
 
 class EffectsRequest(BaseModel):
     gain: float = 1.0               # Amplitude scaling
-    delay_ms: float = 0.0           # Time shifting
+    delay_ms: float = 0.0           # Pure time shifting y[n] = x[n - n0]
     shift_hz: float = 0.0           # Frequency translation
-    echo_enabled: bool = False      # Convolution echo
-    echo_feedback: float = 32.0     # Feedback percentage (0-95%)
-    echo_mix: float = 45.0          # Wet/dry mix percentage (0-100%)
+    echo_enabled: bool = False      # Convolution echo y[n] = x * h
+    echo_delay_ms: float = 250.0    # Echo delay spacing in ms
+    echo_feedback: float = 55.0     # Echo decay percentage (0-90%)
+    echo_taps: int = 3              # Number of echo reflections (1-6)
+    echo_mix: float = 65.0          # Wet/dry mix percentage (0-100%)
 
 
 @app.post("/api/process/effects")
@@ -332,7 +382,7 @@ def apply_effects(req: EffectsRequest):
     if req.gain != 1.0:
         result = scale_amplitude(result, req.gain)
 
-    # 2. Time shifting: y[n] = x[n - n0]
+    # 2. Pure time shifting: y[n] = x[n - n0]
     if req.delay_ms > 0:
         result = time_shift(result, state.fs, req.delay_ms)
 
@@ -342,11 +392,11 @@ def apply_effects(req: EffectsRequest):
 
     # 4. Convolution echo: y[n] = x[n] * h[n]
     if req.echo_enabled:
-        feedback = max(0.0, min(0.95, req.echo_feedback / 100.0))
-        wet_mix = max(0.0, min(1.0, req.echo_mix / 100.0))
-        delay_val = max(1.0, req.delay_ms if req.delay_ms > 0 else 250.0)
-        echoed = convolution_echo(result, state.fs, delay_ms=delay_val, decay=feedback, num_echoes=3)
-        result = blend_echo(result, echoed, wet_mix)
+        feedback = max(0.05, min(0.92, req.echo_feedback / 100.0))
+        wet_mix = max(0.05, min(1.0, req.echo_mix / 100.0))
+        delay_val = max(10.0, req.echo_delay_ms if req.echo_delay_ms > 0 else 250.0)
+        taps = max(1, min(6, int(req.echo_taps)))
+        result = convolution_echo(result, state.fs, delay_ms=delay_val, decay=feedback, num_echoes=taps, wet_mix=wet_mix)
 
     state.processed = result
     return get_full_state_payload()
@@ -362,8 +412,10 @@ class FullProcessRequest(BaseModel):
     delay_ms: float = 0.0
     shift_hz: float = 0.0
     echo_enabled: bool = False
-    echo_feedback: float = 32.0
-    echo_mix: float = 45.0
+    echo_delay_ms: float = 250.0
+    echo_feedback: float = 55.0
+    echo_taps: int = 3
+    echo_mix: float = 65.0
 
 
 @app.post("/api/process/all")
@@ -403,11 +455,11 @@ def apply_all(req: FullProcessRequest):
         result = frequency_shift(result, state.fs, req.shift_hz)
 
     if req.echo_enabled:
-        feedback = max(0.0, min(0.95, req.echo_feedback / 100.0))
-        wet_mix = max(0.0, min(1.0, req.echo_mix / 100.0))
-        delay_val = max(1.0, req.delay_ms if req.delay_ms > 0 else 250.0)
-        echoed = convolution_echo(result, state.fs, delay_ms=delay_val, decay=feedback, num_echoes=3)
-        result = blend_echo(result, echoed, wet_mix)
+        feedback = max(0.05, min(0.92, req.echo_feedback / 100.0))
+        wet_mix = max(0.05, min(1.0, req.echo_mix / 100.0))
+        delay_val = max(10.0, req.echo_delay_ms if req.echo_delay_ms > 0 else 250.0)
+        taps = max(1, min(6, int(req.echo_taps)))
+        result = convolution_echo(result, state.fs, delay_ms=delay_val, decay=feedback, num_echoes=taps, wet_mix=wet_mix)
 
     state.processed = result
     return get_full_state_payload()
@@ -461,12 +513,14 @@ def export_wav():
 
 
 @app.get("/api/impulse-response")
-def get_impulse_response(delay_ms: float = 250.0, feedback: float = 50.0, num_echoes: int = 3):
+def get_impulse_response(delay_ms: float = 250.0, feedback: float = 55.0, num_echoes: int = 3, wet_mix: float = 65.0):
     """
     Discrete impulse response h[n] of the echo system: y[n] = x[n] * h[n].
     """
-    decay = max(0.0, min(0.95, feedback / 100.0))
-    t_h, h = get_echo_impulse_response(state.fs, delay_ms=delay_ms, decay=decay, num_echoes=num_echoes)
+    decay = max(0.05, min(0.92, feedback / 100.0))
+    wet = max(0.05, min(1.0, wet_mix / 100.0))
+    taps = max(1, min(6, int(num_echoes)))
+    t_h, h = get_echo_impulse_response(state.fs, delay_ms=delay_ms, decay=decay, num_echoes=taps, wet_mix=wet)
     
     # Extract stem coordinates (time_ms, amplitude)
     stems = [{"t_ms": float(t * 1000), "amp": float(val)} for t, val in zip(t_h, h) if abs(val) > 1e-4]
@@ -474,10 +528,11 @@ def get_impulse_response(delay_ms: float = 250.0, feedback: float = 50.0, num_ec
     return {
         "delay_ms": delay_ms,
         "decay": decay,
-        "num_echoes": num_echoes,
+        "num_echoes": taps,
+        "wet_mix": wet,
         "sample_rate": state.fs,
         "stems": stems,
-        "formula": "h[n] = δ[n] + decay · δ[n - n₀] + decay² · δ[n - 2n₀] + decay³ · δ[n - 3n₀]",
+        "formula": "h[n] = δ[n] + wet·decay·δ[n - n₀] + wet·decay²·δ[n - 2n₀] + ...",
         "total_samples": len(h)
     }
 
@@ -575,10 +630,86 @@ def get_theory_manifest():
 load_test("tones")
 
 
+@app.get("/api/presets/reallife")
+def get_reallife_presets():
+    """Returns metadata and recommended DSP parameters for real-life applications."""
+    return {
+        "presets": [
+            {
+                "id": "telephone",
+                "name": "Vintage Telephone Bandwidth Filter",
+                "category": "Telecommunications",
+                "filter": {"enabled": True, "low_freq": 300, "high_freq": 3400, "operation": "keep"},
+                "effects": {"gain": 1.1, "delay_ms": 0, "shift_hz": 0, "echo_enabled": False}
+            },
+            {
+                "id": "mains-notch",
+                "name": "Mains 60 Hz Powerline Hum Notch",
+                "category": "Audio Engineering",
+                "filter": {"enabled": True, "low_freq": 55, "high_freq": 65, "operation": "cut"},
+                "effects": {"gain": 1.0, "delay_ms": 0, "shift_hz": 0, "echo_enabled": False}
+            },
+            {
+                "id": "cathedral-reverb",
+                "name": "Cathedral / Concert Hall Reverb",
+                "category": "Acoustics",
+                "filter": {"enabled": False},
+                "effects": {"gain": 0.95, "delay_ms": 0, "shift_hz": 0, "echo_enabled": True, "echo_delay_ms": 280, "echo_feedback": 70, "echo_taps": 5, "echo_mix": 80}
+            },
+            {
+                "id": "canyon-echo",
+                "name": "Canyon / Mountain Ridge Echo",
+                "category": "Acoustics",
+                "filter": {"enabled": False},
+                "effects": {"gain": 1.0, "delay_ms": 0, "shift_hz": 0, "echo_enabled": True, "echo_delay_ms": 450, "echo_feedback": 55, "echo_taps": 4, "echo_mix": 75}
+            },
+            {
+                "id": "hearing-aid",
+                "name": "Hearing Aid High-Frequency Compensation",
+                "category": "Biomedical / Audiology",
+                "filter": {"enabled": True, "low_freq": 2000, "high_freq": 4000, "operation": "amplify", "strength": 2.2},
+                "effects": {"gain": 0.9, "delay_ms": 0, "shift_hz": 0, "echo_enabled": False}
+            },
+            {
+                "id": "doppler-siren",
+                "name": "Doppler Shift / Moving Vehicle Siren",
+                "category": "Telecommunications",
+                "filter": {"enabled": False},
+                "effects": {"gain": 1.0, "delay_ms": 0, "shift_hz": 45.0, "echo_enabled": False}
+            },
+            {
+                "id": "rumble-cutoff",
+                "name": "Sub-bass Rumble & HVAC Filter",
+                "category": "Audio Engineering",
+                "filter": {"enabled": True, "low_freq": 0, "high_freq": 80, "operation": "cut"},
+                "effects": {"gain": 1.05, "delay_ms": 0, "shift_hz": 0, "echo_enabled": False}
+            }
+        ]
+    }
+
+
 # Serve frontend if build exists
-frontend_dist = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.isdir(frontend_dist):
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+
+    @app.exception_handler(404)
+    async def spa_404_handler(request, exc):
+        index_file = os.path.join(frontend_dist, "index.html")
+        if os.path.isfile(index_file) and not request.url.path.startswith("/api/"):
+            return FileResponse(index_file)
+        return Response(content="Not Found", status_code=404)
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Serve static file if exists
+        file_path = os.path.join(frontend_dist, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        index_file = os.path.join(frontend_dist, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+        return Response(content="Frontend build index.html not found", status_code=404)
 
 
 if __name__ == "__main__":

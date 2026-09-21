@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Download, RotateCcw, BookOpen, Sparkles, Music, Activity, ChevronDown } from 'lucide-react';
+import { Upload, Download, RotateCcw, BookOpen, Sparkles, Music, Activity, ChevronDown, Volume2 } from 'lucide-react';
 
 export default function Header({
   sourceName,
@@ -15,6 +15,7 @@ export default function Header({
   const [hoveredPreset, setHoveredPreset] = useState(null);
 
   const presets = [
+    { id: 'pulse',      icon: <Volume2   size={13} />, label: 'Pulse (Echo Demo)' },
     { id: 'tones',      icon: <Sparkles size={13} />, label: 'Standard 3-Tone' },
     { id: 'multitone',  icon: <Music     size={13} />, label: '4-Harmonic' },
     { id: 'noise',      icon: <Activity  size={13} />, label: 'Tone + Noise' },
@@ -31,10 +32,10 @@ export default function Header({
       <div className="header-brand">
         <div style={{
           width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
-          background: 'linear-gradient(135deg, rgba(200,190,250,0.22) 0%, rgba(124,58,237,0.22) 100%)',
-          border: '1px solid rgba(200,190,250,0.28)',
+          background: 'linear-gradient(135deg, rgba(31, 35, 40, 0.22) 0%, rgba(69, 64, 79, 0.22) 100%)',
+          border: '1px solid rgba(31, 35, 40, 0.28)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 18px rgba(200,190,250,0.28)'
+          boxShadow: '0 0 18px rgba(31, 35, 40, 0.28)'
         }}>
           <Activity size={21} color="var(--lavender-tonic)" />
         </div>
@@ -43,11 +44,11 @@ export default function Header({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{
               fontFamily: 'var(--font-display)', fontSize: '21px', fontWeight: '400',
-              color: 'var(--lavender-tonic)', textShadow: '0 0 18px rgba(200,190,250,0.28)'
+              color: 'var(--lavender-tonic)', textShadow: '0 0 18px rgba(31, 35, 40, 0.28)'
             }}>
               Signal Scissors
             </h1>
-            <span className="pixel-badge" style={{ color: 'var(--lavender-tonic)', borderColor: 'rgba(200,190,250,0.4)', fontSize: '13px' }}>
+            <span className="pixel-badge" style={{ color: 'var(--lavender-tonic)', borderColor: 'rgba(31, 35, 40, 0.4)', fontSize: '13px' }}>
               CSE:220
             </span>
           </div>
@@ -72,7 +73,7 @@ export default function Header({
             style={{
               fontSize: '11px', padding: '4px 10px',
               borderRadius: 'var(--radius-pill)', border: 'none',
-              background: hoveredPreset === p.id ? 'rgba(200,190,250,0.14)' : 'transparent',
+              background: hoveredPreset === p.id ? 'rgba(31, 35, 40, 0.14)' : 'transparent',
               color: hoveredPreset === p.id ? 'var(--lavender-tonic)' : 'var(--text-secondary)',
             }}
           >

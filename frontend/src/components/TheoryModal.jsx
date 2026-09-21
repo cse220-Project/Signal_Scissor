@@ -11,23 +11,23 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
 
   return (
     <div className="glass-modal-backdrop" onClick={onClose}>
-      <div className="glass-modal-card" style={{ maxWidth: '920px', height: '82vh' }} onClick={(e) => e.stopPropagation()}>
+      <div className="glass-modal-card workstation-theory" style={{ maxWidth: '920px', height: '82vh' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '20px 28px',
-          borderBottom: '1px solid rgba(200, 190, 250, 0.12)',
-          background: 'rgba(21, 17, 48, 0.85)'
+          borderBottom: '1px solid rgba(31, 35, 40, 0.12)',
+          background: 'rgba(250, 249, 246, 0.85)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
               width: '36px',
               height: '36px',
               borderRadius: '10px',
-              background: 'rgba(200, 190, 250, 0.15)',
-              border: '1px solid rgba(200, 190, 250, 0.25)',
+              background: 'rgba(31, 35, 40, 0.15)',
+              border: '1px solid rgba(31, 35, 40, 0.25)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -59,8 +59,8 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
           {/* Left: Concept Selector List */}
           <div style={{
             width: '270px',
-            borderRight: '1px solid rgba(200, 190, 250, 0.1)',
-            background: 'rgba(16, 13, 38, 0.65)',
+            borderRight: '1px solid rgba(31, 35, 40, 0.1)',
+            background: 'rgba(250, 249, 246, 0.65)',
             padding: '16px 12px',
             overflowY: 'auto'
           }}>
@@ -82,8 +82,8 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
                     padding: '10px 12px',
                     borderRadius: 'var(--radius-sm)',
                     border: '1px solid',
-                    borderColor: isActive ? 'rgba(200, 190, 250, 0.4)' : 'transparent',
-                    background: isActive ? 'rgba(200, 190, 250, 0.12)' : 'transparent',
+                    borderColor: isActive ? 'rgba(31, 35, 40, 0.4)' : 'transparent',
+                    background: isActive ? 'rgba(31, 35, 40, 0.12)' : 'transparent',
                     color: isActive ? 'var(--lavender-tonic)' : 'var(--text-secondary)',
                     fontWeight: isActive ? '700' : '500',
                     fontFamily: 'var(--font-sans)',
@@ -103,11 +103,11 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
           </div>
 
           {/* Right: Formulation Details */}
-          <div style={{ flex: 1, padding: '28px', overflowY: 'auto', background: 'rgba(21, 17, 48, 0.5)' }}>
+          <div style={{ flex: 1, padding: '28px', overflowY: 'auto', background: 'rgba(250, 249, 246, 0.5)' }}>
             {activeConcept && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', fontFamily: 'var(--font-sans)' }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1f2328', fontFamily: 'var(--font-sans)' }}>
                     {activeConcept.title}
                   </h3>
                   <span style={{
@@ -118,9 +118,9 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
                     fontFamily: 'var(--font-mono)',
                     padding: '3px 9px',
                     borderRadius: '4px',
-                    background: 'rgba(200, 190, 250, 0.15)',
+                    background: 'rgba(31, 35, 40, 0.15)',
                     color: 'var(--lavender-tonic)',
-                    border: '1px solid rgba(200, 190, 250, 0.3)'
+                    border: '1px solid rgba(31, 35, 40, 0.3)'
                   }}>
                     <FileCode size={13} />
                     {activeConcept.file}
@@ -129,12 +129,12 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
 
                 {/* Mathematical Equation Card */}
                 <div style={{
-                  background: 'rgba(16, 13, 38, 0.9)',
-                  border: '1px solid rgba(200, 190, 250, 0.2)',
+                  background: 'rgba(250, 249, 246, 0.9)',
+                  border: '1px solid rgba(31, 35, 40, 0.2)',
                   borderRadius: 'var(--radius-md)',
                   padding: '18px 22px',
                   marginBottom: '20px',
-                  boxShadow: '0 8px 24px rgba(10, 7, 24, 0.5)'
+                  boxShadow: '0 8px 24px rgba(250, 249, 246, 0.5)'
                 }}>
                   <div className="swiss-tag" style={{ color: 'var(--lavender-tonic)', marginBottom: '8px' }}>
                     MATHEMATICAL FORMULATION
@@ -142,7 +142,7 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
                   <div style={{
                     fontFamily: 'var(--font-mono)',
                     fontSize: '14px',
-                    color: '#FFFFFF',
+                    color: '#1f2328',
                     letterSpacing: '0.02em',
                     lineHeight: '1.6'
                   }}>
@@ -167,7 +167,7 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
                   </div>
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {activeConcept.key_points?.map((pt, idx) => (
-                      <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', fontSize: '13px', color: '#E2E8F0', fontFamily: 'var(--font-sans)' }}>
+                      <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', fontSize: '13px', color: '#1f2328', fontFamily: 'var(--font-sans)' }}>
                         <CheckCircle size={15} color="var(--lavender-tonic)" style={{ marginTop: '2px', flexShrink: 0 }} />
                         <span>{pt}</span>
                       </li>
@@ -177,8 +177,8 @@ export default function TheoryModal({ isOpen, onClose, theoryData }) {
 
                 {/* Python Mapping */}
                 <div style={{
-                  background: 'rgba(16, 13, 38, 0.7)',
-                  border: '1px solid rgba(200, 190, 250, 0.12)',
+                  background: 'rgba(250, 249, 246, 0.7)',
+                  border: '1px solid rgba(31, 35, 40, 0.12)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '14px 18px',
                   display: 'flex',
