@@ -47,7 +47,7 @@ export default function ImpulseResponseCanvas({
 
     // Draw amplitude grid (0, 0.5, 1.0)
     ctx.font = '10px Outfit, sans-serif';
-    ctx.fillStyle = '#8c959f';
+    ctx.fillStyle = '#626975';
     ctx.textAlign = 'right';
     [0, 0.5, 1.0].forEach((amp) => {
       const y = baselineY - amp * plotHeight;
@@ -65,7 +65,7 @@ export default function ImpulseResponseCanvas({
 
     // Draw time ticks
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#8c959f';
+    ctx.fillStyle = '#626975';
     const timeTicks = 5;
     for (let i = 0; i <= timeTicks; i++) {
       const t = (i / timeTicks) * maxTime;

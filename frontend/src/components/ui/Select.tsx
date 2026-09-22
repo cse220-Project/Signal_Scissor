@@ -30,7 +30,7 @@ export default function Select({
           value={value}
           onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
           disabled={disabled}
-          className="w-full appearance-none bg-surface-raised text-ink-primary text-[13px] font-medium px-3.5 py-2 pr-8 rounded-ios-lg focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors hover:bg-surface-muted"
+          className="w-full appearance-none bg-surface text-ink-primary text-[13px] font-medium px-3.5 py-2 pr-8 rounded-ios-lg border border-[#9097A1] disabled:opacity-40 disabled:cursor-not-allowed transition-colors hover:bg-surface-muted"
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>

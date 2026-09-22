@@ -3,10 +3,10 @@ import { useLocation } from 'react-router-dom';
 export default function TopBar() {
   const location = useLocation();
   const path = location.pathname.replace('/', '');
-  const pageName = path === '' ? 'Dashboard' : path.charAt(0).toUpperCase() + path.slice(1);
+  const pageName = path === 'noise-remover' ? 'Noise Remover' : path === '' ? 'Dashboard' : path.charAt(0).toUpperCase() + path.slice(1);
 
   return (
-    <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-surface/95 backdrop-blur-md sticky top-0 z-10 border-b border-hairline">
+    <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-surface sticky top-0 z-10 border-b border-hairline">
       <div className="flex items-center gap-2">
         <svg
           width="20"

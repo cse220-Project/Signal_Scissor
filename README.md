@@ -54,3 +54,18 @@ VITE_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
 When `frontend/dist` exists, the backend also serves the built frontend from its root route.
+
+## Noise Remover
+
+The **Noise Remover** page (`/noise-remover`) accepts WAV, MP3, M4A, and AAC and runs local server-side FFmpeg noise reduction with Light, Balanced, and Strong settings. Preview the original and cleaned recordings, then download PCM WAV. Defaults: 25 MiB, five minutes of audio, one-hour result retention. Existing workstation audio and settings remain independent.
+
+Install FFmpeg/FFprobe (`brew install ffmpeg` on macOS or `sudo apt-get install ffmpeg` on Debian/Ubuntu). See [Noise Remover setup, API, configuration, security, testing, and troubleshooting](docs/noise-removal.md) and [example backend environment](backend/.env.example).
+
+```sh
+.venv/bin/python -m pip install -r backend/requirements-dev.txt
+.venv/bin/python -m unittest discover -s backend/tests -v
+cd frontend
+npm test
+npm run lint
+npm run build
+```

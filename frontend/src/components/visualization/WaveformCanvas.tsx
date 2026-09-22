@@ -53,7 +53,7 @@ export default function WaveformCanvas({
 
     // Time grid ticks
     const numTicks = 6;
-    ctx.fillStyle = '#8c959f';
+    ctx.fillStyle = '#626975';
     ctx.font = '10px Outfit, sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i <= numTicks; i++) {
@@ -105,7 +105,7 @@ export default function WaveformCanvas({
       const isOrigActive = activeTrack === 'original';
       drawEnvelope(
         originalWaveform.peaks,
-        isOrigActive ? '#1f2328' : '#8c959f',
+        isOrigActive ? '#1f2328' : '#626975',
         isOrigActive ? 'rgba(31, 35, 40, 0.18)' : 'rgba(140, 149, 159, 0.12)',
         isOrigActive ? 0.9 : 0.4
       );
@@ -116,7 +116,7 @@ export default function WaveformCanvas({
       const isProcActive = activeTrack === 'processed';
       drawEnvelope(
         processedWaveform.peaks,
-        isProcActive ? '#26211c' : '#59636e',
+        isProcActive ? '#1F2A44' : '#59636e',
         isProcActive ? 'rgba(38, 33, 28, 0.28)' : 'rgba(89, 99, 110, 0.15)',
         isProcActive ? 1.0 : 0.5
       );

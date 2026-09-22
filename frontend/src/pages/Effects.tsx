@@ -54,7 +54,7 @@ export default function Effects() {
           onClick={() => setActiveTab('real-life')}
           className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors ${
             activeTab === 'real-life'
-              ? 'bg-[#26211c] text-white font-semibold'
+              ? 'bg-navy text-white font-semibold'
               : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
           }`}
         >
@@ -64,7 +64,7 @@ export default function Effects() {
           onClick={() => setActiveTab('manual')}
           className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors ${
             activeTab === 'manual'
-              ? 'bg-[#26211c] text-white font-semibold'
+              ? 'bg-navy text-white font-semibold'
               : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
           }`}
         >
@@ -83,7 +83,7 @@ export default function Effects() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`text-[12px] px-3 py-1 rounded-pill transition-all ${
                   selectedCategory === cat
-                    ? 'bg-[#26211c] text-white font-semibold'
+                    ? 'bg-navy text-white font-semibold'
                     : 'bg-surface text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
                 }`}
               >

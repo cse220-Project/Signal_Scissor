@@ -60,7 +60,7 @@ export default function SpectrumCanvas({
     const dbLines = [-60, -40, -20, 0];
     ctx.strokeStyle = 'rgba(31, 35, 40, 0.07)';
     ctx.lineWidth = 1;
-    ctx.fillStyle = '#8c959f';
+    ctx.fillStyle = '#626975';
     ctx.font = '9px Outfit, sans-serif';
     ctx.textAlign = 'right';
 
@@ -137,18 +137,18 @@ export default function SpectrumCanvas({
 
     // 2. Draw Processed spectrum (Primary curve)
     if (processedSpectrum) {
-      renderCurve(processedSpectrum, '#26211c', 1.8, false);
+      renderCurve(processedSpectrum, '#1F2A44', 1.8, false);
     }
 
     // 3. Mark Dominant Frequency
     if (dominantFreq && dominantFreq > 20 && dominantFreq <= nyquist) {
       const domX = freqToX(dominantFreq);
-      ctx.fillStyle = '#b94a48';
+      ctx.fillStyle = '#8B3A3A';
       ctx.beginPath();
       ctx.arc(domX, paddingTop + 6, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#b94a48';
+      ctx.fillStyle = '#8B3A3A';
       ctx.font = '10px Outfit, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(`${Math.round(dominantFreq)} Hz (Peak)`, domX, paddingTop + 20);

@@ -22,25 +22,20 @@ export default function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const base = 'inline-flex items-center justify-center font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100 disabled:cursor-not-allowed select-none tracking-tight';
+  const base = 'inline-flex items-center justify-center rounded-[6px] border font-medium transition-[background-color,box-shadow,transform] duration-150 enabled:active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed select-none';
 
   const variants = {
-    // Primary: solid dark #26211c with crisp white text
-    primary: 'bg-[#26211c] text-[#ffffff] font-semibold tracking-[-0.01em] hover:bg-[#1a1713] active:bg-[#0f0d0b]',
-    // Secondary: transparent bg, subtle 1px border on cream
-    secondary: 'bg-transparent text-[#26211c] border border-[rgba(38,33,28,0.18)] hover:bg-[rgba(38,33,28,0.04)] active:bg-[rgba(38,33,28,0.08)]',
-    // Ghost: transparent hover
-    ghost: 'bg-transparent text-ink-secondary hover:text-ink-primary hover:bg-surface-raised active:bg-surface-muted',
-    // Destructive: soft error fill
-    destructive: 'bg-error-soft text-error hover:bg-error hover:text-white active:opacity-90',
-    // Pill capsule style
-    pill: 'bg-surface-raised text-ink-primary hover:bg-[#26211c] hover:text-white hover:font-semibold rounded-pill',
+    primary: 'bg-navy text-white border-navy enabled:hover:bg-navy-hover enabled:hover:shadow-sm',
+    secondary: 'bg-transparent text-navy border-navy enabled:hover:bg-lavender-soft',
+    ghost: 'bg-transparent border-transparent text-ink-secondary enabled:hover:text-navy enabled:hover:bg-surface-raised',
+    destructive: 'bg-error text-white border-error enabled:hover:opacity-90 enabled:hover:shadow-sm',
+    pill: 'bg-surface-raised text-navy border-hairline enabled:hover:bg-lavender-soft',
   };
 
   const sizes = {
-    sm: 'text-[13px] px-4 py-2 rounded-ios-lg gap-2',
-    md: 'text-[14px] px-5 py-2.5 rounded-ios-xl gap-2',
-    lg: 'text-[15px] px-6 py-3 rounded-ios-xl gap-2.5',
+    sm: 'text-[13px] px-4 py-2 gap-2',
+    md: 'text-[14px] px-5 py-2.5 gap-2',
+    lg: 'text-[15px] px-6 py-3 gap-2.5',
   };
 
   return (

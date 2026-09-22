@@ -29,9 +29,12 @@ from signal_io import generate_test_signal, generate_pulse_signal, load_wav, sav
 from fourier_filter import compute_spectrum, band_filter, process_band
 from audio_effects import scale_amplitude, time_shift, convolution_echo, get_echo_impulse_response
 from signal_analysis import rms, peak_amplitude, dominant_frequency
+from noise_routes import router as noise_router, NoiseUploadLimit
 
 app = FastAPI(title="Signal Scissors DSP Engine", version="2.0.0")
 logger = logging.getLogger(__name__)
+app.include_router(noise_router)
+app.add_middleware(NoiseUploadLimit)
 
 # Enable CORS for local Vite dev server
 app.add_middleware(
