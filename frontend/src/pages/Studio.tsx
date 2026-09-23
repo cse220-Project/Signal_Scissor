@@ -81,7 +81,7 @@ export default function Studio() {
                 Original
               </span>
               <span className="inline-flex items-center gap-1 text-ink-primary font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#26211c] inline-block" />
+                <span className="w-2.5 h-2.5 rounded-full bg-navy inline-block" />
                 Processed
               </span>
             </div>

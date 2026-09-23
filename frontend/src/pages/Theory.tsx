@@ -102,7 +102,7 @@ export default function Theory() {
           onClick={() => setActiveTab('math')}
           className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors ${
             activeTab === 'math'
-              ? 'bg-[#26211c] text-white font-semibold'
+              ? 'bg-navy text-white font-semibold'
               : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
           }`}
         >
@@ -112,7 +112,7 @@ export default function Theory() {
           onClick={() => setActiveTab('simulations')}
           className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors ${
             activeTab === 'simulations'
-              ? 'bg-[#26211c] text-white font-semibold'
+              ? 'bg-navy text-white font-semibold'
               : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
           }`}
         >
@@ -122,7 +122,7 @@ export default function Theory() {
           onClick={() => setActiveTab('quiz')}
           className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors ${
             activeTab === 'quiz'
-              ? 'bg-[#26211c] text-white font-semibold'
+              ? 'bg-navy text-white font-semibold'
               : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
           }`}
         >
@@ -243,7 +243,7 @@ export default function Theory() {
                 <button
                   onClick={() => setWaveformType('square')}
                   className={`text-[12px] px-2.5 py-1 rounded-pill ${
-                    waveformType === 'square' ? 'bg-[#26211c] text-white' : 'bg-surface-raised text-ink-secondary'
+                    waveformType === 'square' ? 'bg-navy text-white' : 'bg-surface-raised text-ink-secondary'
                   }`}
                 >
                   Square Wave (Odd Harmonics)
@@ -251,7 +251,7 @@ export default function Theory() {
                 <button
                   onClick={() => setWaveformType('sawtooth')}
                   className={`text-[12px] px-2.5 py-1 rounded-pill ${
-                    waveformType === 'sawtooth' ? 'bg-[#26211c] text-white' : 'bg-surface-raised text-ink-secondary'
+                    waveformType === 'sawtooth' ? 'bg-navy text-white' : 'bg-surface-raised text-ink-secondary'
                   }`}
                 >
                   Sawtooth Wave (All Harmonics)
@@ -389,8 +389,8 @@ export default function Theory() {
 
                   // 2. Discrete sampled points & stems
                   const totalSamples = Math.floor(sampleRateRate);
-                  ctx.strokeStyle = sampleRateRate >= 2 * signalFrequency ? '#3f7856' : '#b94a48';
-                  ctx.fillStyle = sampleRateRate >= 2 * signalFrequency ? '#3f7856' : '#b94a48';
+                  ctx.strokeStyle = sampleRateRate >= 2 * signalFrequency ? '#3f7856' : '#8B3A3A';
+                  ctx.fillStyle = sampleRateRate >= 2 * signalFrequency ? '#3f7856' : '#8B3A3A';
                   ctx.lineWidth = 1.5;
 
                   for (let i = 0; i <= totalSamples; i++) {
@@ -465,7 +465,7 @@ export default function Theory() {
                           btnStyle = 'bg-error-soft text-error';
                         }
                       } else if (isSelected) {
-                        btnStyle = 'bg-[#26211c] text-white font-medium';
+                        btnStyle = 'bg-navy text-white font-medium';
                       }
 
                       return (

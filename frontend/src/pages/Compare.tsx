@@ -44,7 +44,7 @@ export default function Compare() {
               onClick={() => handleTrackChange('original')}
               className={`px-3 py-1.5 rounded-pill text-[12px] font-medium transition-all ${
                 activeTrack === 'original'
-                  ? 'bg-[#26211c] text-white font-semibold'
+                  ? 'bg-navy text-white font-semibold'
                   : 'text-ink-secondary hover:text-ink-primary'
               }`}
             >
@@ -54,7 +54,7 @@ export default function Compare() {
               onClick={() => handleTrackChange('processed')}
               className={`px-3 py-1.5 rounded-pill text-[12px] font-medium transition-all ${
                 activeTrack === 'processed'
-                  ? 'bg-[#26211c] text-white font-semibold'
+                  ? 'bg-navy text-white font-semibold'
                   : 'text-ink-secondary hover:text-ink-primary'
               }`}
             >

@@ -9,6 +9,8 @@ export default {
     extend: {
       colors: {
         cream: 'var(--bg-cream)',
+        navy: { DEFAULT: '#1F2A44', hover: '#30415F' },
+        gold: '#B8955A',
         surface: {
           DEFAULT: 'var(--bg-surface)',
           raised: 'var(--bg-surface-raised)',
@@ -48,11 +50,11 @@ export default {
         mono: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       borderRadius: {
-        'ios-sm': '8px',
-        'ios-md': '12px',
-        'ios-lg': '16px',
-        'ios-xl': '20px',
-        'ios-2xl': '24px',
+        'ios-sm': '6px',
+        'ios-md': '6px',
+        'ios-lg': '6px',
+        'ios-xl': '8px',
+        'ios-2xl': '10px',
         'pill': '9999px',
       }
     },
