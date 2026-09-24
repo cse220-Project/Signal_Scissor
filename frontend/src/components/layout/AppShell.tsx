@@ -30,7 +30,7 @@ export default function AppShell({ children }: AppShellProps) {
       <FloatingAudioBar />
 
       {/* Shell: sidebar + inset */}
-      <div className="flex min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
+      <div className="app-shell-background flex min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
         {/* Desktop Sidebar */}
         <SideNav />
 

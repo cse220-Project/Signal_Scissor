@@ -258,6 +258,16 @@
   --slider-track: oklch(0.30 0.006 286);
 }
 
+/* Keep the image exclusive to dark mode and tint it for readable controls. */
+.dark .app-shell-background {
+  background-image:
+    linear-gradient(rgba(10, 14, 20, 0.72), rgba(10, 14, 20, 0.82)),
+    url('/assets/black.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
 @layer base {
   * {
