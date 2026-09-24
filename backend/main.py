@@ -14,8 +14,7 @@ import threading
 import time
 import subprocess
 import shutil
-
-# Ensure backend directory is in sys.path
+#Ensure backend directory is in sys.path
 backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
@@ -149,4 +148,4 @@ if __name__ == "__main__":
     if "--legacy-gui" in sys.argv or "--gui" in sys.argv:
         run_legacy_gui()
     else:
-        run_react_studio()
+        run_react_studio()
