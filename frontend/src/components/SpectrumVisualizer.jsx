@@ -141,25 +141,25 @@ export default function SpectrumVisualizer({
       ctx.restore();
     };
 
-    // Original Spectrum (Lavender Tonic)
+    // Original Spectrum (Sky Blue - Track A)
     if (originalSpectrum) {
       renderCurve(
         originalSpectrum,
-        '#59636e',
-        'rgba(31, 35, 40, 0.28)',
-        'rgba(31, 35, 40, 0.0)',
+        '#0284c7',
+        'rgba(2, 132, 199, 0.35)',
+        'rgba(2, 132, 199, 0.02)',
         0.95
       );
     }
 
-    // Processed Spectrum (Vivid Violet)
+    // Processed Spectrum (Emerald Green - Track B)
     if (processedSpectrum) {
       renderCurve(
         processedSpectrum,
-        '#45404f',
-        'rgba(69, 64, 79, 0.28)',
-        'rgba(69, 64, 79, 0.0)',
-        0.88
+        '#059669',
+        'rgba(5, 150, 105, 0.35)',
+        'rgba(5, 150, 105, 0.02)',
+        0.90
       );
     }
 
@@ -258,23 +258,23 @@ export default function SpectrumVisualizer({
         background: 'rgba(250, 249, 246, 0.65)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <SlidersHorizontal size={14} color="var(--lavender-tonic)" />
+          <SlidersHorizontal size={14} color="#0284c7" />
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: '700', letterSpacing: '0.01em', color: '#1f2328' }}>
             Fourier Transform Spectrum Analyzer
           </span>
-          <span className="swiss-tag" style={{ color: 'var(--lavender-tonic)', marginLeft: '4px' }}>
+          <span className="swiss-tag" style={{ color: '#0284c7', marginLeft: '4px' }}>
             [FFT MAGNITUDE]
           </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '11px', fontFamily: 'var(--font-sans)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--lavender-tonic)', boxShadow: '0 0 8px var(--lavender-tonic)' }} />
-            <span style={{ color: 'var(--lavender-tonic)', fontWeight: '600' }}>Original |X(f)|</span>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0284c7', boxShadow: '0 0 6px rgba(2,132,199,0.6)' }} />
+            <span style={{ color: '#0284c7', fontWeight: '700' }}>Original |X(f)|</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--accent-violet)' }} />
-            <span style={{ color: 'var(--accent-violet)', fontWeight: '600' }}>Processed |Y(f)|</span>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#059669', boxShadow: '0 0 6px rgba(5,150,105,0.6)' }} />
+            <span style={{ color: '#059669', fontWeight: '700' }}>Processed |Y(f)|</span>
           </div>
         </div>
       </div>

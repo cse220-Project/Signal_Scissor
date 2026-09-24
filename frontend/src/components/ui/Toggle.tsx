@@ -22,7 +22,7 @@ export default function Toggle({
       <div
         onClick={() => !disabled && onChange(!checked)}
         className={`w-10 h-6 rounded-pill transition-colors duration-200 relative flex items-center px-0.5 ${
-          checked ? 'bg-navy' : 'bg-surface-muted'
+          checked ? 'bg-primary' : 'bg-surface-muted'
         }`}
       >
         <div

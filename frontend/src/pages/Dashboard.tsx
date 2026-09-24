@@ -53,15 +53,11 @@ export default function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
       {/* Page Header */}
-      <header className="space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-pastel-lavender text-ink-primary text-[12px] font-medium mb-1">
-          <span className="material-symbols-outlined text-[15px]">science</span>
-          <span>CSE 220 Signals and Systems Workstation</span>
-        </div>
-        <h1 className="text-[28px] md:text-[34px] font-semibold text-ink-primary tracking-tight leading-tight">
-          Signal Scissors DSP Studio
+      <header className="space-y-1.5">
+        <h1 className="text-[28px] md:text-[32px] font-semibold text-ink-primary tracking-tight leading-tight">
+          <span className="trademark-logo">SIGNAL Scissors</span> DSP Studio
         </h1>
-        <p className="text-[14px] text-ink-secondary max-w-xl leading-relaxed">
+        <p className="text-[14px] text-ink-secondary max-w-2xl leading-relaxed">
           Interactive digital audio workstation for discrete Fourier filtering, single-sideband frequency translation, and multi-tap acoustic echo convolution.
         </p>
       </header>
@@ -76,13 +72,13 @@ export default function Dashboard() {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={`min-h-[240px] rounded-ios-2xl border border-hairline p-6 md:p-8 transition-all text-center flex flex-col items-center justify-center cursor-pointer select-none ${
-              isDragging ? 'bg-[#f2efe4] scale-[1.01]' : 'bg-surface hover:bg-[#f2efe4]'
+              isDragging ? 'bg-accent scale-[1.01] border-primary/40' : 'bg-surface hover:bg-accent hover:border-primary/30'
             }`}
           >
             <input
               ref={fileInputRef}
               type="file"
-              accept=".wav,audio/wav"
+              accept="audio/*"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -92,10 +88,10 @@ export default function Dashboard() {
               </span>
             </div>
             <h3 className="text-[16px] font-semibold text-ink-primary mb-1">
-              Drop a WAV Audio File Here
+              Drop an Audio File Here
             </h3>
             <p className="text-[13px] text-ink-secondary max-w-xs mb-4">
-              Upload custom speech or musical recordings (automatically normalized and downmixed to mono float32).
+              Any audio format · up to 60 MB
             </p>
             <Button variant="secondary" size="sm" icon="folder_open">
               Browse Files
@@ -108,10 +104,10 @@ export default function Dashboard() {
 
         {/* Engine Status KPI Card */}
         <div className="md:col-span-4 flex">
-          <Card variant="pastel-cream" className="w-full flex flex-col justify-center !p-5">
+          <Card variant="pastel-cream" className="w-full flex flex-col justify-between !p-5">
             <div>
-              <div className="flex items-center justify-between pb-2 border-b border-hairline mb-3">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between pb-2.5 border-b border-hairline mb-3.5">
+                <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-success inline-block"></span>
                   <span className="text-[14px] font-semibold text-ink-primary tracking-tight">
                     DSP Engine
@@ -121,33 +117,30 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-2 text-[12px]">
-                <div className="flex justify-between items-center py-1">
+                <div className="flex justify-between items-center py-0.5">
                   <span className="text-ink-secondary">Sampling Rate</span>
                   <span className="font-mono text-ink-primary font-medium">{sampleRate} Hz</span>
                 </div>
-                <div className="h-[1px] bg-hairline w-full" />
-
-                <div className="flex justify-between items-center py-1">
+                <div className="flex justify-between items-center py-0.5">
                   <span className="text-ink-secondary">Nyquist Frequency</span>
                   <span className="font-mono text-ink-primary font-medium">{sampleRate / 2} Hz</span>
                 </div>
-                <div className="h-[1px] bg-hairline w-full" />
-
-                <div className="flex justify-between items-center py-1">
+                <div className="flex justify-between items-center py-0.5">
                   <span className="text-ink-secondary">Fourier Filter</span>
                   <span className="text-ink-primary">Single-Sided FFT</span>
                 </div>
-                <div className="h-[1px] bg-hairline w-full" />
-
-                <div className="flex justify-between items-center py-1">
+                <div className="flex justify-between items-center py-0.5">
                   <span className="text-ink-secondary">Echo Model</span>
-                  <span className="text-ink-primary">Discrete Convolution h[n]</span>
+                  <span className="text-ink-primary">Discrete Conv h[n]</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-2 border-t border-hairline text-[11px] text-ink-tertiary text-center">
-              Active: {signalState?.source_name || 'Multi-Tone Demo'}
+            <div className="mt-4 pt-2.5 border-t border-hairline text-[11px] text-ink-tertiary flex items-center justify-between">
+              <span>Active Signal:</span>
+              <span className="font-medium text-ink-secondary truncate max-w-[140px]">
+                {signalState?.source_name || 'Multi-Tone Demo'}
+              </span>
             </div>
           </Card>
         </div>

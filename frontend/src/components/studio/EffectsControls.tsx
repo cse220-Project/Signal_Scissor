@@ -29,6 +29,39 @@ export default function EffectsControls() {
         <code className="font-mono text-ink-primary">audio_effects.py</code>: amplitude scaling, delay, SSB frequency translation, and multi-tap echo convolution.
       </p>
 
+      {/* Voice Transformation Effects */}
+      <div className="pt-2 border-t border-hairline space-y-2">
+        <label className="text-[13px] font-medium text-ink-primary block">
+          Voice Transformation Effect
+        </label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {[
+            { id: 'none', label: 'Off / Normal', icon: 'mic_none' },
+            { id: 'autotune', label: 'Auto-Tune', icon: 'music_note' },
+            { id: 'robotic', label: 'Robotic', icon: 'smart_toy' },
+            { id: 'baby', label: 'Baby / Chipmunk', icon: 'child_care' },
+            { id: 'monster', label: 'Deep Monster', icon: 'sentiment_very_dissatisfied' },
+          ].map((item) => {
+            const isSelected = (effects.voice_effect || 'none') === item.id;
+            return (
+              <button
+                type="button"
+                key={item.id}
+                onClick={() => setEffects({ voice_effect: item.id === 'none' ? null : item.id })}
+                className={`flex items-center gap-1.5 p-2 rounded-ios-lg text-xs font-medium border transition-all ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                    : 'bg-surface text-ink-secondary border-hairline hover:bg-surface-raised'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[15px]">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Time-Domain Sliders */}
       <div className="space-y-3 pt-1">
         <Slider
@@ -54,9 +87,9 @@ export default function EffectsControls() {
         <Slider
           label="Frequency Shift (Hilbert SSB)"
           value={effects.shift_hz}
-          min={-150}
-          max={150}
-          step={5}
+          min={0}
+          max={100000}
+          step={10}
           unit="Hz"
           onChange={(val) => setEffects({ shift_hz: val })}
         />
@@ -133,17 +166,33 @@ export default function EffectsControls() {
         )}
       </div>
 
-      {/* Apply Effects Action */}
-      <div className="pt-2">
-        <Button
-          variant="primary"
-          size="md"
-          fullWidth
-          loading={isLoading}
-          onClick={applyEffectsAction}
-        >
-          Apply Acoustic Effects
-        </Button>
+      {/* Apply Effects Action: Original vs Processed */}
+      <div className="pt-2 space-y-2 border-t border-hairline/60">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-ink-tertiary block">
+          Target Audio
+        </span>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="secondary"
+            size="md"
+            icon="graphic_eq"
+            loading={isLoading}
+            onClick={() => applyEffectsAction('original')}
+            className="text-[12px]"
+          >
+            Apply to Original
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            icon="auto_fix_high"
+            loading={isLoading}
+            onClick={() => applyEffectsAction('processed')}
+            className="text-[12px]"
+          >
+            Apply to Processed
+          </Button>
+        </div>
       </div>
     </div>
   );

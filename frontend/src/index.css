@@ -1,51 +1,332 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-
 @import './workstation.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Classic palette; existing token names preserve component compatibility. */
-  --bg-cream: #F8F5EF;
-  --bg-surface: #FFFFFF;
-  --bg-surface-raised: #F8F5EF;
-  --bg-surface-muted: #E5E1DA;
-  --ink-primary: #2C2C2C;
-  --ink-secondary: #535C68;
-  --ink-tertiary: #626975;
-  --navy: #1F2A44;
-  --navy-hover: #30415F;
-  --gold: #B8955A;
-  --accent-lavender: #E8ECF2;
-  --accent-lavender-hover: #DCE2EB;
-  --accent-lavender-active: #CCD5E2;
-  --accent-lavender-ink: #1F2A44;
-  --accent-soft: #EEF1F5;
-  --cat-cream: #F4EFE5;
-  --cat-blue: #EDF0F5;
-  --cat-lavender: #EEF0F4;
-  --cat-peach: #F3ECE6;
-  --cat-green: #EDF1EC;
-  --error: #8B3A3A;
-  --error-soft: #F6EAEA;
-  --success: #356348;
-  --success-soft: #EAF1EC;
-  --hairline: #E5E1DA;
+/* ─── FH Lecturis Custom Font-Face Declarations ─────────────────────── */
+@font-face {
+  font-family: 'FH Lecturis';
+  src: url('/fonts/Lecturis/FHLecturis-Bold.woff2') format('woff2'),
+       url('/fonts/Lecturis/FHLecturis-Bold.woff') format('woff'),
+       url('/fonts/Lecturis/FHLecturis-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
 }
 
-body {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
-  background-color: var(--bg-cream);
-  color: var(--ink-primary);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@font-face {
+  font-family: 'FH Lecturis';
+  src: url('/fonts/Lecturis/FHLecturis-Regular.woff2') format('woff2'),
+       url('/fonts/Lecturis/FHLecturis-Regular.woff') format('woff'),
+       url('/fonts/Lecturis/FHLecturis-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lecturis';
+  src: url('/fonts/Lecturis/FHLecturis-Bold.woff2') format('woff2'),
+       url('/fonts/Lecturis/FHLecturis-Bold.woff') format('woff'),
+       url('/fonts/Lecturis/FHLecturis-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Brittany Signature';
+  src: url('/fonts/BrittanySignature.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─── Trademark Styling Classes ─────────────────────────────────────── */
+/* Default (Light Mode): Dark Slate to Medium Gray gradient */
+.trademark-logo {
+  font-family: 'FH Lecturis', 'Lecturis', 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  background: linear-gradient(90deg, #0F172A 0%, #334155 55%, #64748B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  filter: drop-shadow(0px 1px 1.5px rgba(0, 0, 0, 0.15));
+}
+
+/* Dark Mode & Dark Sidebar: White to Silver gradient (#FFFFFF -> #BDBDBD) */
+.dark .trademark-logo,
+[style*="--sidebar-foreground"] .trademark-logo {
+  background: linear-gradient(90deg, #FFFFFF 0%, #E0E0E0 55%, #BDBDBD 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  filter: drop-shadow(0px 1.5px 2px rgba(0, 0, 0, 0.5));
+}
+
+.trademark-signal {
+  font-family: 'FH Lecturis', 'Lecturis', 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  display: inline-block;
 }
 
-/* Material Symbols alignment */
+/* ─── Semantic Color Tokens (Sink Master palette adapted for navy theme) ─── */
+:root {
+  color-scheme: light;
+
+  /* Radius scale — 0.625rem base, matching Sink Master */
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Sidebar geometry */
+  --sidebar-width: 240px;
+  --sidebar-width-icon: 56px;
+  --sidebar-transition: 200ms ease-linear;
+
+  /* Background / Foreground */
+  --background:     oklch(0.975 0.004 250);
+  --foreground:     oklch(0.16 0.012 260);
+
+  /* Card */
+  --card:            oklch(1 0 0);
+  --card-foreground: oklch(0.16 0.012 260);
+
+  /* Popover */
+  --popover:            oklch(1 0 0);
+  --popover-foreground: oklch(0.16 0.012 260);
+
+  /* Primary — Navy */
+  --primary:            oklch(0.24 0.035 255);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Secondary */
+  --secondary:            oklch(0.96 0.005 255);
+  --secondary-foreground: oklch(0.24 0.035 255);
+
+  /* Muted */
+  --muted:            oklch(0.96 0.005 255);
+  --muted-foreground: oklch(0.52 0.018 255);
+
+  /* Accent — Lavender */
+  --accent:            oklch(0.94 0.012 260);
+  --accent-foreground: oklch(0.24 0.035 255);
+
+  /* Status */
+  --success:            oklch(0.55 0.16 145);
+  --success-foreground: oklch(0.985 0 0);
+  --destructive:        oklch(0.577 0.245 27.325);
+
+  /* Border / Input / Ring */
+  --border: oklch(0.90 0.006 255);
+  --input:  oklch(0.90 0.006 255);
+  --ring:   oklch(0.60 0.025 255);
+
+  /* Sidebar tokens — navy dark sidebar */
+  --sidebar:                     oklch(0.19 0.038 255);
+  --sidebar-foreground:          oklch(0.93 0.008 255);
+  --sidebar-primary:             oklch(0.75 0.045 60);   /* gold accent */
+  --sidebar-primary-foreground:  oklch(0.19 0.038 255);
+  --sidebar-accent:              oklch(0.28 0.04 255);
+  --sidebar-accent-foreground:   oklch(0.985 0 0);
+  --sidebar-border:              oklch(1 0 0 / 10%);
+  --sidebar-ring:                oklch(0.55 0.025 255);
+
+  /* Legacy tokens — preserve backward compat */
+  --bg-cream:          oklch(0.975 0.004 250);
+  --bg-surface:        oklch(1 0 0);
+  --bg-surface-raised: oklch(0.975 0.004 250);
+  --bg-surface-muted:  oklch(0.92 0.008 255);
+  --ink-primary:       oklch(0.16 0.012 260);
+  --ink-secondary:     oklch(0.42 0.022 255);
+  --ink-tertiary:      oklch(0.52 0.018 255);
+  --navy:              oklch(0.24 0.038 255);
+  --navy-hover:        oklch(0.30 0.042 255);
+  --gold:              #B8955A;
+  --accent-lavender:       oklch(0.94 0.012 260);
+  --accent-lavender-hover: oklch(0.90 0.015 260);
+  --accent-lavender-active:oklch(0.86 0.018 260);
+  --accent-lavender-ink:   oklch(0.24 0.038 255);
+  --accent-soft:           oklch(0.96 0.008 260);
+  --cat-cream:    oklch(0.97 0.012 80);
+  --cat-blue:     oklch(0.96 0.010 255);
+  --cat-lavender: oklch(0.96 0.010 285);
+  --cat-peach:    oklch(0.96 0.014 40);
+  --cat-green:    oklch(0.96 0.012 145);
+  --error:        oklch(0.45 0.18 27);
+  --error-soft:   oklch(0.96 0.025 27);
+  --success-soft: oklch(0.96 0.025 145);
+  --hairline:     oklch(0.90 0.006 255);
+  --slider-fill:  oklch(0.24 0.038 255);
+  --slider-track: oklch(0.90 0.006 255);
+}
+
+/* ─── Dark Mode Semantic Tokens (Sink Master tailwind.css & DESIGN.md) ────── */
+.dark {
+  color-scheme: dark;
+
+  /* Background / Foreground */
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+
+  /* Card */
+  --card:            oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.985 0 0);
+
+  /* Popover */
+  --popover:            oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+
+  /* Primary */
+  --primary:            oklch(0.92 0.004 286.32);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+
+  /* Secondary */
+  --secondary:            oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+
+  /* Muted */
+  --muted:            oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+
+  /* Accent */
+  --accent:            oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+
+  /* Status */
+  --success:            oklch(0.72 0.17 145);
+  --success-foreground: oklch(0.18 0.04 145);
+  --destructive:        oklch(0.704 0.191 22.216);
+
+  /* Border / Input / Ring */
+  --border: oklch(1 0 0 / 10%);
+  --input:  oklch(1 0 0 / 15%);
+  --ring:   oklch(0.552 0.016 285.938);
+
+  /* Charts */
+  --chart-1: oklch(0.871 0.15 154.449);
+  --chart-2: oklch(0.723 0.219 149.579);
+  --chart-3: oklch(0.627 0.194 149.214);
+  --chart-4: oklch(0.527 0.154 150.069);
+  --chart-5: oklch(0.448 0.119 151.328);
+
+  /* Sidebar tokens (Sink Master dark sidebar) */
+  --sidebar:                     oklch(0.17 0.006 285.885);
+  --sidebar-foreground:          oklch(0.985 0 0);
+  --sidebar-primary:             oklch(0.75 0.045 60);
+  --sidebar-primary-foreground:  oklch(0.17 0.006 285.885);
+  --sidebar-accent:              oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground:   oklch(0.985 0 0);
+  --sidebar-border:              oklch(1 0 0 / 10%);
+  --sidebar-ring:                oklch(0.552 0.016 285.938);
+
+  /* Legacy aliases in dark mode */
+  --bg-cream:          oklch(0.141 0.005 285.823);
+  --bg-surface:        oklch(0.21 0.006 285.885);
+  --bg-surface-raised: oklch(0.25 0.006 286);
+  --bg-surface-muted:  oklch(0.274 0.006 286.033);
+  --ink-primary:       oklch(0.985 0 0);
+  --ink-secondary:     oklch(0.705 0.015 286.067);
+  --ink-tertiary:      oklch(0.552 0.016 285.938);
+  --navy:              oklch(0.92 0.004 286.32);
+  --navy-hover:        oklch(0.98 0 0);
+  --gold:              #D4AF37;
+  --accent-lavender:       oklch(0.274 0.006 286.033);
+  --accent-lavender-hover: oklch(0.32 0.006 286);
+  --accent-lavender-active:oklch(0.36 0.006 286);
+  --accent-lavender-ink:   oklch(0.985 0 0);
+  --accent-soft:           oklch(0.24 0.006 286);
+  --cat-cream:    oklch(0.21 0.006 285.885);
+  --cat-blue:     oklch(0.23 0.010 255);
+  --cat-lavender: oklch(0.23 0.010 285);
+  --cat-peach:    oklch(0.23 0.014 40);
+  --cat-green:    oklch(0.23 0.012 145);
+  --error:        oklch(0.704 0.191 22.216);
+  --error-soft:   oklch(0.28 0.04 22);
+  --success-soft: oklch(0.28 0.04 145);
+  --hairline:     oklch(1 0 0 / 10%);
+  --slider-fill:  oklch(0.75 0.045 60);
+  --slider-track: oklch(0.30 0.006 286);
+}
+
+/* ─── Base Styles ─────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    border-color: var(--border);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  html { scrollbar-gutter: stable; }
+  body {
+    margin: 0;
+    min-width: 320px;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--foreground);
+    letter-spacing: -0.02em;
+  }
+  h1 { line-height: 1.2; }
+  h2 { line-height: 1.35; }
+
+  button { border-radius: var(--radius); }
+  button, a, input, select { -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled),
+  [role='button']:not(:disabled) { cursor: pointer; }
+
+  a, button, input, select, textarea, [role='button'] {
+    touch-action: manipulation;
+  }
+
+  input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),
+  select, textarea {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--card);
+    color: var(--foreground);
+  }
+  input, select, textarea { accent-color: var(--primary); }
+  button, input, select { font: inherit; }
+
+  code, pre, kbd, samp, .font-mono {
+    font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  table { width: 100%; border-collapse: collapse; text-align: left; }
+  th { background: var(--secondary); color: var(--foreground); font-weight: 600; }
+  th, td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: var(--accent); }
+
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--ring) !important;
+    outline-offset: 2px;
+  }
+  input[type=range]:focus-visible { outline-color: var(--ring); }
+  aside a:focus-visible { outline-color: var(--ring) !important; box-shadow: none; }
+
+  ::selection { background: var(--accent); color: var(--foreground); }
+
+  main, .grid > *, .flex > * { min-width: 0; }
+}
+
+/* ─── Material Symbols ────────────────────────────────────────────────────── */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 22;
   display: inline-block;
@@ -56,23 +337,16 @@ body {
   font-variation-settings: 'FILL' 1, 'wght' 450, 'GRAD' 0, 'opsz' 22;
 }
 
-/* Smooth minimal scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ─── Scrollbars ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(89, 99, 110, 0.2);
+  background: var(--border);
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(89, 99, 110, 0.35);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--ring); }
 
-/* Minimalist Range Slider — Clean flat neutral dark slider */
+/* ─── Range Sliders ───────────────────────────────────────────────────────── */
 input[type=range] {
   -webkit-appearance: none;
   appearance: none;
@@ -81,12 +355,12 @@ input[type=range] {
   border-radius: 9999px;
   cursor: pointer;
   background: var(--hairline);
+  min-height: 4px;
+  touch-action: pan-y;
 }
-input[type=range]:focus {
-  outline: none;
-}
+input[type=range]:focus { outline: none; }
+input[type=range]:disabled { cursor: not-allowed; }
 
-/* WebKit (Chrome, Safari, Edge) */
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -100,11 +374,13 @@ input[type=range]::-webkit-slider-thumb {
   box-shadow: none !important;
   transition: transform 0.1s ease;
 }
-input[type=range]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%; height: 4px; cursor: pointer;
+  border-radius: 9999px; border: none;
+  background: var(--hairline);
 }
 
-/* Firefox */
 input[type=range]::-moz-range-thumb {
   height: 14px !important;
   width: 3px !important;
@@ -115,97 +391,54 @@ input[type=range]::-moz-range-thumb {
   box-shadow: none !important;
   transition: transform 0.1s ease;
 }
-input[type=range]::-moz-range-thumb:hover {
-  transform: scale(1.15);
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 4px;
-  cursor: pointer;
-  border-radius: 9999px;
-  border: none;
-  background: rgba(31, 35, 40, 0.12);
-}
-
+input[type=range]::-moz-range-thumb:hover { transform: scale(1.15); }
 input[type=range]::-moz-range-track {
-  width: 100%;
-  height: 4px;
-  cursor: pointer;
-  border-radius: 9999px;
-  border: none;
-  background: rgba(31, 35, 40, 0.12);
+  width: 100%; height: 4px; cursor: pointer;
+  border-radius: 9999px; border: none;
+  background: var(--hairline);
 }
 
-/* Canvas crisp rendering */
+/* ─── Canvas ──────────────────────────────────────────────────────────────── */
 canvas {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
 
-/* Shared presentation safeguards; native events and value semantics are unchanged. */
-:root { --slider-fill: #1F2A44; --slider-track: #E5E1DA; }
-html { scrollbar-gutter: stable; }
-body { margin: 0; min-width: 320px; }
-button, input, select { font: inherit; }
-button, a, input, select { -webkit-tap-highlight-color: transparent; }
-:where(button, a, input, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--ink-secondary);
-  outline-offset: 4px;
-}
-input[type=range]:focus-visible { outline: 2px solid var(--ink-secondary); }
-input[type=range] { min-height: 4px; touch-action: pan-y; }
-input[type=range]:disabled { cursor: not-allowed; }
-main, .grid > *, .flex > * { min-width: 0; }
+/* ─── Layout helpers ──────────────────────────────────────────────────────── */
+.font-solitus { font-family: 'Solitus', 'IBM Plex Sans', sans-serif; }
 .panel-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.page-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px; background: var(--bg-surface); border: 1px solid var(--hairline); border-radius: 8px; }
+.page-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+}
 .page-tabs > button { flex: 1 1 auto; }
 .metric-table { min-width: 580px; }
 .metric-table th, .metric-table td { padding-right: 16px; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-}
 
-/* Shared hierarchy and controls across all routed pages. */
-@layer base {
-  h1, h2 { font-family: Georgia, 'Times New Roman', serif; color: var(--navy); }
-  h1 { line-height: 1.2; }
-  h2 { line-height: 1.35; }
-  h3 { color: var(--navy); }
-  button { border-radius: 6px; }
-  input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),
-  select, textarea {
-    border: 1px solid #9097A1;
-    border-radius: 6px;
-    background-color: var(--bg-surface);
-    color: var(--ink-primary);
-  }
-  input, select, textarea { accent-color: var(--navy); }
-  table { width: 100%; border-collapse: collapse; text-align: left; }
-  th { background: var(--bg-surface-raised); color: var(--navy); font-weight: 600; }
-  th, td { padding: 12px 16px; border-bottom: 1px solid var(--hairline); }
-  tbody tr:hover { background: #F8F9FB; }
-}
-:where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--navy) !important;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 2px white;
-}
-input[type=range]:focus-visible { outline-color: var(--navy); }
-::selection { background: #DCE2EB; color: var(--navy); }
-main > div > header:first-child, main > div > div:first-child:has(h1) {
+main > div > header:first-child,
+main > div > div:first-child:has(h1) {
   padding-bottom: 20px;
   margin-bottom: 24px;
   border-bottom: 1px solid var(--hairline);
 }
-main h1 { color: var(--navy); font-size: clamp(1.65rem, 3vw, 2.15rem); font-weight: 500; }
+main h1 { font-size: clamp(1.65rem, 3vw, 2.15rem); font-weight: 500; }
 main .rounded-ios-2xl { border-width: 1px; box-shadow: 0 2px 6px rgb(31 42 68 / 4%); }
 main .page-tabs { gap: 4px; }
-main .page-tabs > button { border-radius: 6px; }
+main .page-tabs > button { border-radius: var(--radius-sm); }
+
+button.rounded-pill { border-radius: var(--radius-sm); }
+
 @media (max-width: 639px) {
   .metric-table th, .metric-table td { padding: 10px 12px; }
   main > div > div:first-child:has(h1) > div:last-child { flex-wrap: wrap; }
 }
 
-button.rounded-pill { border-radius: 6px; }
-aside a:focus-visible { outline-color: white !important; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

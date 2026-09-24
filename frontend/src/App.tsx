@@ -9,7 +9,10 @@ import Compare from './pages/Compare';
 import Theory from './pages/Theory';
 import Settings from './pages/Settings';
 import NoiseRemover from './pages/NoiseRemover';
+import MicCapture from './pages/MicCapture';
+import About from './pages/About';
 import OriginalWorkstation from './App.jsx';
+import { ThemeProvider } from './context/ThemeContext';
 import { AudioPlayerProvider } from './hooks/useAudioPlayer';
 import { useAudioStore } from './store/useAudioStore';
 
@@ -21,21 +24,26 @@ function Workspace() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
       <Routes>
         <Route element={<Workspace />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/studio" element={<Studio />} />
           <Route path="/signals" element={<Signals />} />
+          <Route path="/mic-capture" element={<MicCapture />} />
           <Route path="/effects" element={<Effects />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/theory" element={<Theory />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/noise-remover" element={<NoiseRemover />} />
+          <Route path="/about" element={<About />} />
+
           <Route path="*" element={<div><h1>Page not found</h1><a href="/">Return to Dashboard</a></div>} />
         </Route>
         <Route path="/workstation" element={<><a className="block p-3 text-center text-sm underline" href="/studio">Return to Studio</a><OriginalWorkstation /></>} />
       </Routes>
     </BrowserRouter>
+  </ThemeProvider>
   );
 }

@@ -62,7 +62,7 @@ export default function FilterControls() {
           label="Low Cutoff Frequency"
           value={filter.low_freq}
           min={0}
-          max={Math.max(100, filter.high_freq - 20)}
+          max={100000}
           step={10}
           unit="Hz"
           onChange={(val) => setFilter({ low_freq: val })}
@@ -72,8 +72,8 @@ export default function FilterControls() {
         <Slider
           label="High Cutoff Frequency"
           value={filter.high_freq}
-          min={filter.low_freq + 20}
-          max={nyquist}
+          min={0}
+          max={100000}
           step={10}
           unit="Hz"
           onChange={(val) => setFilter({ high_freq: val })}
@@ -127,18 +127,35 @@ export default function FilterControls() {
         </div>
       </div>
 
-      {/* Apply Button */}
-      <div className="pt-2">
-        <Button
-          variant="primary"
-          size="md"
-          fullWidth
-          loading={isLoading}
-          disabled={!filter.enabled}
-          onClick={applyFilterAction}
-        >
-          Apply Fourier Filter
-        </Button>
+      {/* Apply Options: Original vs Processed */}
+      <div className="pt-2 space-y-2 border-t border-hairline/60">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-ink-tertiary block">
+          Target Audio
+        </span>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="secondary"
+            size="md"
+            icon="graphic_eq"
+            loading={isLoading}
+            disabled={!filter.enabled}
+            onClick={() => applyFilterAction('original')}
+            className="text-[12px]"
+          >
+            Apply to Original
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            icon="auto_fix_high"
+            loading={isLoading}
+            disabled={!filter.enabled}
+            onClick={() => applyFilterAction('processed')}
+            className="text-[12px]"
+          >
+            Apply to Processed
+          </Button>
+        </div>
       </div>
     </div>
   );

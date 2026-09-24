@@ -46,12 +46,12 @@ interface AudioStoreState {
   uploadFile: (file: File) => Promise<boolean>;
   setFilter: (params: Partial<FilterParams>) => void;
   setEffects: (params: Partial<EffectsParams>) => void;
-  applyFilterAction: () => Promise<void>;
-  applyEffectsAction: () => Promise<void>;
-  applyFullPipeline: () => Promise<void>;
+  applyFilterAction: (targetTrack?: 'original' | 'processed') => Promise<void>;
+  applyEffectsAction: (targetTrack?: 'original' | 'processed') => Promise<void>;
+  applyFullPipeline: (targetTrack?: 'original' | 'processed') => Promise<void>;
   resetToOriginal: () => Promise<void>;
   updateImpulseResponse: () => Promise<void>;
-  applyRealLifePreset: (preset: RealLifeAppPreset) => Promise<void>;
+  applyRealLifePreset: (preset: RealLifeAppPreset, targetTrack?: 'original' | 'processed') => Promise<void>;
 
   // Playback setters
   setIsPlaying: (playing: boolean) => void;
@@ -178,12 +178,14 @@ export const useAudioStore = create<AudioStoreState>((set, get) => ({
     set({ effects: { ...get().effects, ...params } });
   },
 
-  applyFilterAction: async () => {
+  applyFilterAction: async (targetTrack: 'original' | 'processed' = 'original') => {
     set({ isLoading: true, error: null });
     try {
-      const data = await applyFilter(get().filter);
+      const filterParams: FilterParams = { ...get().filter, target_track: targetTrack };
+      const data = await applyFilter(filterParams);
       set({
         signalState: data,
+        activeTrack: 'processed',
         duration: data.duration || get().duration,
         audioVersion: Date.now(),
       });
@@ -194,12 +196,14 @@ export const useAudioStore = create<AudioStoreState>((set, get) => ({
     }
   },
 
-  applyEffectsAction: async () => {
+  applyEffectsAction: async (targetTrack: 'original' | 'processed' = 'original') => {
     set({ isLoading: true, error: null });
     try {
-      const data = await applyEffects(get().effects);
+      const effectsParams: EffectsParams = { ...get().effects, target_track: targetTrack };
+      const data = await applyEffects(effectsParams);
       set({
         signalState: data,
+        activeTrack: 'processed',
         duration: data.duration || get().duration,
         audioVersion: Date.now(),
       });
@@ -211,12 +215,13 @@ export const useAudioStore = create<AudioStoreState>((set, get) => ({
     }
   },
 
-  applyFullPipeline: async () => {
+  applyFullPipeline: async (targetTrack: 'original' | 'processed' = 'original') => {
     set({ isLoading: true, error: null });
     try {
-      const data = await applyAllDsp(get().filter, get().effects);
+      const data = await applyAllDsp(get().filter, get().effects, targetTrack);
       set({
         signalState: data,
+        activeTrack: 'processed',
         duration: data.duration || get().duration,
         audioVersion: Date.now(),
       });
@@ -272,7 +277,7 @@ export const useAudioStore = create<AudioStoreState>((set, get) => ({
     }
   },
 
-  applyRealLifePreset: async (preset: RealLifeAppPreset) => {
+  applyRealLifePreset: async (preset: RealLifeAppPreset, targetTrack: 'original' | 'processed' = 'original') => {
     set({ isLoading: true, error: null, activeRealLifePreset: preset.id });
     try {
       const newFilter: FilterParams = {
@@ -292,13 +297,15 @@ export const useAudioStore = create<AudioStoreState>((set, get) => ({
         echo_feedback: preset.effects.echo_feedback ?? 55,
         echo_taps: preset.effects.echo_taps ?? 3,
         echo_mix: preset.effects.echo_mix ?? 65,
+        voice_effect: preset.effects.voice_effect ?? null,
       };
 
       set({ filter: newFilter, effects: newEffects });
 
-      const data = await applyAllDsp(newFilter, newEffects);
+      const data = await applyAllDsp(newFilter, newEffects, targetTrack);
       set({
         signalState: data,
+        activeTrack: 'processed',
         duration: data.duration || get().duration,
         audioVersion: Date.now(),
       });

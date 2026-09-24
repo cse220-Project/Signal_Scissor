@@ -1,9 +1,9 @@
 /* Presentation for the live JSX workstation. */
 .workstation-theme {
-  --font-sans: 'Outfit', sans-serif;
-  --font-display: Georgia, 'Times New Roman', serif;
-  --font-mono: 'Outfit', sans-serif;
-  --font-pixel: 'Outfit', sans-serif;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-display: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-pixel: 'IBM Plex Sans', sans-serif;
   --text-primary: #2C2C2C;
   --text-secondary: #59636e;
   --text-muted: #68727c;
@@ -129,16 +129,16 @@
 }
 
 /* Carry the shared palette through the original workstation route. */
-.swiss-btn { background-color: var(--bg-surface); color: var(--navy); border-color: var(--navy); }
-.swiss-btn-primary { background-color: var(--navy); color: white; }
-.swiss-btn:enabled:hover { box-shadow: 0 2px 5px rgb(31 42 68 / 10%); }
+.swiss-btn { background-color: var(--bg-surface); color: var(--ink-primary); border-color: var(--hairline); }
+.swiss-btn-primary { background-color: var(--primary); color: var(--primary-foreground); }
+.swiss-btn:enabled:hover { box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
 .swiss-btn:enabled:active { transform: translateY(1px); }
 .workstation-player, .workstation-waveform, .workstation-spectrum,
 .workstation-effects, .workstation-metrics {
   background: var(--bg-surface) !important;
   border: 1px solid var(--hairline) !important;
   border-radius: 10px !important;
-  box-shadow: 0 2px 6px rgb(31 42 68 / 4%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 .workstation-waveform, .workstation-spectrum, .workstation-effects { border-top-color: var(--gold) !important; }
 .glass-modal-card { border: 1px solid var(--hairline); }
@@ -150,7 +150,7 @@
   border: 1px solid var(--hairline) !important;
   border-radius: 10px !important;
 }
-.workstation-heading h2 { color: var(--navy); font-weight: 500; }
+.workstation-heading h2 { color: var(--ink-primary); font-weight: 500; }
 @media (min-width: 1024px) {
   .app-shell::before { background: var(--navy); }
   .header-brand, .header-brand h1, .header-brand p { color: white !important; }

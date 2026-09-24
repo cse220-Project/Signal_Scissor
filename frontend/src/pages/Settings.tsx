@@ -5,8 +5,11 @@ import Button from '../components/ui/Button';
 import Toggle from '../components/ui/Toggle';
 import Select from '../components/ui/Select';
 
+import { useTheme, ThemePreference } from '../context/ThemeContext';
+
 export default function Settings() {
   const { signalState, resetToOriginal, loadPreset, isLoading } = useAudioStore();
+  const { preference, setPreference } = useTheme();
 
   const [fps60, setFps60] = useState(true);
   const [highDpiCanvas, setHighDpiCanvas] = useState(true);
@@ -24,13 +27,40 @@ export default function Settings() {
     <div className="max-w-3xl mx-auto space-y-4 animate-in fade-in duration-300">
       {/* Header */}
       <div>
-        <h1 className="text-[26px] font-semibold text-ink-primary tracking-tight">
+        <h1 className="text-[26px] font-semibold text-foreground tracking-tight">
           Workstation Settings
         </h1>
-        <p className="text-[13px] text-ink-secondary">
+        <p className="text-[13px] text-muted-foreground">
           Configure digital signal processing engine options, visualizer canvas fidelity, and diagnostic status.
         </p>
       </div>
+
+      {/* Theme & Appearance (Sink Master inspired) */}
+      <Card variant="surface" className="!p-5 space-y-3">
+        <div className="flex items-center gap-2 pb-2 border-b border-border">
+          <span className="material-symbols-outlined text-[19px] text-foreground">palette</span>
+          <h3 className="text-[15px] font-semibold text-foreground">Theme &amp; Appearance</h3>
+        </div>
+        <p className="text-[13px] text-muted-foreground">
+          Select interface color mode. Built with Sink Master semantic OKLCH design tokens.
+        </p>
+        <div className="grid grid-cols-3 gap-3 pt-1">
+          {(['light', 'dark', 'system'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setPreference(t)}
+              className={`flex flex-col items-center justify-center p-3 rounded-lg border text-xs font-semibold transition-all ${
+                preference === t
+                  ? 'border-primary bg-accent text-foreground ring-1 ring-primary'
+                  : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}
+            >
+              <span className="capitalize">{t} Mode</span>
+            </button>
+          ))}
+        </div>
+      </Card>
 
       {/* System Diagnostics */}
       <Card variant="pastel-cream" className="!p-5 space-y-3">

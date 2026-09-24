@@ -24,7 +24,7 @@ export default function Studio() {
   const { seekTo } = useAudioPlayer();
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto animate-in fade-in duration-300">
+    <div className="space-y-5 max-w-6xl mx-auto animate-in fade-in duration-300">
       {/* Studio Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -32,7 +32,7 @@ export default function Studio() {
             DSP Studio Workstation
           </h1>
           <p className="text-[13px] text-ink-secondary">
-            Current Signal: <span className="font-medium text-ink-primary">{signalState?.source_name || 'Loading...'}</span>
+            Current <span className="trademark-signal">SIGNAL</span>: <span className="font-medium text-ink-primary">{signalState?.source_name || 'Loading...'}</span>
           </p>
         </div>
 
@@ -44,7 +44,7 @@ export default function Studio() {
             onClick={resetToOriginal}
             loading={isLoading}
           >
-            Reset Signal
+            Reset <span className="trademark-signal">SIGNAL</span>
           </Button>
 
           <Button
@@ -76,12 +76,12 @@ export default function Studio() {
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px]">
-              <span className="inline-flex items-center gap-1 text-ink-tertiary">
-                <span className="w-2.5 h-2.5 rounded-full bg-ink-tertiary/40 inline-block" />
+              <span className="inline-flex items-center gap-1.5 text-sky-500 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block shadow-sm shadow-sky-400/50" />
                 Original
               </span>
-              <span className="inline-flex items-center gap-1 text-ink-primary font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-navy inline-block" />
+              <span className="inline-flex items-center gap-1.5 text-emerald-500 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block shadow-sm shadow-emerald-400/50" />
                 Processed
               </span>
             </div>

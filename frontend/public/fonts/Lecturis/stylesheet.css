@@ -1,0 +1,78 @@
+@font-face {
+    font-family: 'FH Lecturis';
+    src: url('FHLecturis-Bold.eot');
+    src: local('FH Lecturis Bold'), local('FHLecturis-Bold'),
+        url('FHLecturis-Bold.eot?#iefix') format('embedded-opentype'),
+        url('FHLecturis-Bold.woff2') format('woff2'),
+        url('FHLecturis-Bold.woff') format('woff'),
+        url('FHLecturis-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FH Lecturis';
+    src: url('FHLecturis-Regular.eot');
+    src: local('FH Lecturis Regular'), local('FHLecturis-Regular'),
+        url('FHLecturis-Regular.eot?#iefix') format('embedded-opentype'),
+        url('FHLecturis-Regular.woff2') format('woff2'),
+        url('FHLecturis-Regular.woff') format('woff'),
+        url('FHLecturis-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FH Lecturis Rounded';
+    src: url('FHLecturisRounded-Light.eot');
+    src: local('FH Lecturis Rounded Light'), local('FHLecturisRounded-Light'),
+        url('FHLecturisRounded-Light.eot?#iefix') format('embedded-opentype'),
+        url('FHLecturisRounded-Light.woff2') format('woff2'),
+        url('FHLecturisRounded-Light.woff') format('woff'),
+        url('FHLecturisRounded-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FH Lecturis Rounded';
+    src: url('FHLecturisRounded-Regular.eot');
+    src: local('FH Lecturis Rounded Regular'), local('FHLecturisRounded-Regular'),
+        url('FHLecturisRounded-Regular.eot?#iefix') format('embedded-opentype'),
+        url('FHLecturisRounded-Regular.woff2') format('woff2'),
+        url('FHLecturisRounded-Regular.woff') format('woff'),
+        url('FHLecturisRounded-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FH Lecturis Rounded';
+    src: url('FHLecturisRounded-Bold.eot');
+    src: local('FH Lecturis Rounded Bold'), local('FHLecturisRounded-Bold'),
+        url('FHLecturisRounded-Bold.eot?#iefix') format('embedded-opentype'),
+        url('FHLecturisRounded-Bold.woff2') format('woff2'),
+        url('FHLecturisRounded-Bold.woff') format('woff'),
+        url('FHLecturisRounded-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FH Lecturis';
+    src: url('FHLecturis-Light.eot');
+    src: local('FH Lecturis Light'), local('FHLecturis-Light'),
+        url('FHLecturis-Light.eot?#iefix') format('embedded-opentype'),
+        url('FHLecturis-Light.woff2') format('woff2'),
+        url('FHLecturis-Light.woff') format('woff'),
+        url('FHLecturis-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+

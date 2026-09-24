@@ -12,7 +12,7 @@ export default function ProgressBar({
   const clamped = Math.max(0, Math.min(100, value));
 
   const variantMap = {
-    dark: 'bg-navy',
+    dark: 'bg-primary',
     lavender: 'bg-lavender-ink',
     success: 'bg-success',
   };

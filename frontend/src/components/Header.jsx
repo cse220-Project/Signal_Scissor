@@ -42,11 +42,8 @@ export default function Header({
 
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{
-              fontFamily: 'var(--font-display)', fontSize: '21px', fontWeight: '400',
-              color: 'var(--lavender-tonic)', textShadow: '0 0 18px rgba(31, 35, 40, 0.28)'
-            }}>
-              Signal Scissors
+            <h1 className="trademark-logo" style={{ fontSize: '21px' }}>
+              SIGNAL Scissors
             </h1>
             <span className="pixel-badge" style={{ color: 'var(--lavender-tonic)', borderColor: 'rgba(31, 35, 40, 0.4)', fontSize: '13px' }}>
               CSE:220
@@ -84,11 +81,11 @@ export default function Header({
 
       {/* ── Actions ─────────────────────────────── */}
       <div className="header-actions">
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".wav" style={{ display: 'none' }} />
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="audio/*" style={{ display: 'none' }} />
 
-        <button className="swiss-btn" onClick={() => fileInputRef.current?.click()} title="Upload WAV">
+        <button className="swiss-btn" onClick={() => fileInputRef.current?.click()} title="Upload audio (any format, up to 60 MB)">
           <Upload size={13} color="var(--lavender-tonic)" />
-          <span className="load-btn-label">Load WAV</span>
+          <span className="load-btn-label">Load Audio (≤60 MB)</span>
         </button>
 
         <button className="swiss-btn swiss-btn-primary" onClick={onExportWav} title="Export processed WAV">

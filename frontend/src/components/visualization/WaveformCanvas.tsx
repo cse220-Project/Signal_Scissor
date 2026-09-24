@@ -6,10 +6,15 @@ interface WaveformCanvasProps {
   processedWaveform?: WaveformPayload;
   duration: number;
   currentTime: number;
-  activeTrack: 'original' | 'processed';
+  activeTrack?: 'original' | 'processed';
   height?: number;
   onSeek?: (time: number) => void;
   className?: string;
+  showOriginal?: boolean;
+  showProcessed?: boolean;
+  customOrigColor?: string;
+  customProcColor?: string;
+  showPlayhead?: boolean;
 }
 
 export default function WaveformCanvas({
@@ -17,10 +22,15 @@ export default function WaveformCanvas({
   processedWaveform,
   duration,
   currentTime,
-  activeTrack,
+  activeTrack = 'processed',
   height = 140,
   onSeek,
   className = '',
+  showOriginal = true,
+  showProcessed = true,
+  customOrigColor,
+  customProcColor,
+  showPlayhead = true,
 }: WaveformCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -29,6 +39,8 @@ export default function WaveformCanvas({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const isDark = document.documentElement.classList.contains('dark');
 
     // Handle high-DPI displays
     const dpr = window.devicePixelRatio || 1;
@@ -39,12 +51,23 @@ export default function WaveformCanvas({
 
     const width = rect.width;
     const centerY = height / 2;
+    // Long recordings are delivered with a short, frequency-aware preview.
+    // Use it for drawing so a pure sine does not collapse into a solid block.
+    const preferredWaveform = activeTrack === 'original' ? originalWaveform : processedWaveform;
+    const previewDuration = preferredWaveform?.preview?.duration || 0;
+    const previewStart = preferredWaveform?.preview?.start_time || 0;
+    const displayDuration = previewDuration || duration;
 
     // Clear background
     ctx.clearRect(0, 0, width, height);
 
-    // Draw center zero line
-    ctx.strokeStyle = 'rgba(31, 35, 40, 0.08)';
+    // Grid and zero-line
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+    const zeroLineColor = isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)';
+    const tickTextColor = isDark ? 'rgba(255, 255, 255, 0.65)' : '#64748b';
+
+    // Center zero line
+    ctx.strokeStyle = zeroLineColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, centerY);
@@ -52,27 +75,43 @@ export default function WaveformCanvas({
     ctx.stroke();
 
     // Time grid ticks
-    const numTicks = 6;
-    ctx.fillStyle = '#626975';
-    ctx.font = '10px Outfit, sans-serif';
+    // Keep long recordings legible without overcrowding the time axis.
+    const numTicks = Math.min(8, Math.max(4, Math.ceil((displayDuration || 2) / 10)));
+    ctx.fillStyle = tickTextColor;
+    ctx.font = '10px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
     for (let i = 0; i <= numTicks; i++) {
       const x = (i / numTicks) * width;
-      const t = (i / numTicks) * duration;
+      const t = previewStart + (i / numTicks) * (displayDuration || 2.0);
       ctx.fillRect(x, height - 8, 1, 4);
       if (i > 0 && i < numTicks) {
-        ctx.fillText(`${t.toFixed(1)}s`, x, height - 12);
+        const label = t < 0.001 ? `${(t * 1e6).toFixed(0)}µs`
+          : t < 1 ? `${(t * 1e3).toFixed(1)}ms`
+          : t >= 60 ? `${(t / 60).toFixed(1)}m` : `${t.toFixed(1)}s`;
+        ctx.fillText(label, x, height - 12);
       }
     }
 
-    // Helper to draw downsampled envelope
-    const drawEnvelope = (peaks: number[], strokeStyle: string, fillStyle: string, alpha: number) => {
+    // Helper to draw downsampled envelope with optional gradient/fill
+    const drawEnvelope = (
+      peaks: number[],
+      strokeColor: string,
+      fillColor: string,
+      lineWidth: number = 1.5,
+      alpha: number = 1.0,
+      glow: boolean = false
+    ) => {
       if (!peaks || peaks.length < 2) return;
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = fillStyle;
-      ctx.strokeStyle = strokeStyle;
-      ctx.lineWidth = 1;
+      ctx.fillStyle = fillColor;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = lineWidth;
+
+      if (glow) {
+        ctx.shadowColor = strokeColor;
+        ctx.shadowBlur = isDark ? 6 : 3;
+      }
 
       const numBuckets = Math.floor(peaks.length / 2);
       const stepX = width / numBuckets;
@@ -100,49 +139,88 @@ export default function WaveformCanvas({
       ctx.restore();
     };
 
-    // 1. Draw Original Waveform (Ghost / Reference layer)
-    if (originalWaveform?.peaks && originalWaveform.peaks.length > 0) {
+    // Color tokens:
+    // Track A (Original): Electric Cyan / Sky Blue
+    const origStroke = customOrigColor || (isDark ? '#38bdf8' : '#0284c7');
+    const origFill = isDark ? 'rgba(56, 189, 248, 0.20)' : 'rgba(2, 132, 199, 0.14)';
+
+    // Track B (Processed): Vibrant Emerald / Mint
+    const procStroke = customProcColor || (isDark ? '#34d399' : '#059669');
+    const procFill = isDark ? 'rgba(52, 211, 153, 0.26)' : 'rgba(5, 150, 105, 0.18)';
+
+    // 1. Draw Original Waveform (Track A)
+    if (showOriginal && originalWaveform?.peaks && originalWaveform.peaks.length > 0) {
       const isOrigActive = activeTrack === 'original';
       drawEnvelope(
-        originalWaveform.peaks,
-        isOrigActive ? '#1f2328' : '#626975',
-        isOrigActive ? 'rgba(31, 35, 40, 0.18)' : 'rgba(140, 149, 159, 0.12)',
-        isOrigActive ? 0.9 : 0.4
+        originalWaveform.preview?.peaks || originalWaveform.peaks,
+        origStroke,
+        origFill,
+        isOrigActive ? 1.75 : 1.0,
+        isOrigActive ? 1.0 : (showProcessed ? 0.45 : 0.85),
+        isOrigActive
       );
     }
 
-    // 2. Draw Processed Waveform (Main layer)
-    if (processedWaveform?.peaks && processedWaveform.peaks.length > 0) {
+    // 2. Draw Processed Waveform (Track B)
+    if (showProcessed && processedWaveform?.peaks && processedWaveform.peaks.length > 0) {
       const isProcActive = activeTrack === 'processed';
       drawEnvelope(
-        processedWaveform.peaks,
-        isProcActive ? '#1F2A44' : '#59636e',
-        isProcActive ? 'rgba(38, 33, 28, 0.28)' : 'rgba(89, 99, 110, 0.15)',
-        isProcActive ? 1.0 : 0.5
+        processedWaveform.preview?.peaks || processedWaveform.peaks,
+        procStroke,
+        procFill,
+        isProcActive ? 1.75 : 1.0,
+        isProcActive ? 1.0 : 0.5,
+        isProcActive
       );
     }
 
     // 3. Draw Playback Head
-    if (duration > 0) {
+    // The preview is anchored at the start of the signal, so a full-recording
+    // playhead would be misleading once playback has moved beyond it.
+    if (showPlayhead && duration > 0 && !previewDuration) {
       const playX = Math.max(0, Math.min(width, (currentTime / duration) * width));
+      const playheadColor = isDark ? '#fbbf24' : '#d97706';
 
       ctx.save();
+      // Glow on playhead
+      ctx.shadowColor = playheadColor;
+      ctx.shadowBlur = 4;
+
       // Playhead vertical line
-      ctx.strokeStyle = '#1f2328';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = playheadColor;
+      ctx.lineWidth = 1.75;
       ctx.beginPath();
       ctx.moveTo(playX, 0);
       ctx.lineTo(playX, height);
       ctx.stroke();
 
       // Playhead handle
-      ctx.fillStyle = '#1f2328';
+      ctx.fillStyle = playheadColor;
       ctx.beginPath();
-      ctx.arc(playX, 6, 4, 0, Math.PI * 2);
+      ctx.arc(playX, 6, 4.5, 0, Math.PI * 2);
       ctx.fill();
+
+      // Inner white dot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(playX, 6, 2, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.restore();
     }
-  }, [originalWaveform, processedWaveform, duration, currentTime, activeTrack, height]);
+  }, [
+    originalWaveform,
+    processedWaveform,
+    duration,
+    currentTime,
+    activeTrack,
+    height,
+    showOriginal,
+    showProcessed,
+    customOrigColor,
+    customProcColor,
+    showPlayhead,
+  ]);
 
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
     if (!onSeek || duration <= 0) return;

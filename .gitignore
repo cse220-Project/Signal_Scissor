@@ -21,3 +21,9 @@ pnpm-debug.log*
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# Reference / Template folder (not part of the project)
+Sink_Master/
+Sink Master/
+sink_master/
+sink-master/

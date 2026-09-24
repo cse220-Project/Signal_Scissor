@@ -19,6 +19,8 @@ export async function loadTestSignal(preset: string = 'tones'): Promise<SignalSt
 }
 
 export async function uploadAudioFile(file: File): Promise<SignalStateResponse> {
+  if (!file.size) throw new Error('Choose a non-empty audio file.');
+  if (file.size > 60 * 1024 * 1024) throw new Error('Audio files must be 60 MB or smaller.');
   const formData = new FormData();
   formData.append('file', file);
   const res = await api.post<SignalStateResponse>('/api/signal/upload', formData, {
@@ -39,7 +41,8 @@ export async function applyEffects(params: EffectsParams): Promise<SignalStateRe
 
 export async function applyAllDsp(
   filter: FilterParams,
-  effects: EffectsParams
+  effects: EffectsParams,
+  targetTrack: 'original' | 'processed' = 'original'
 ): Promise<SignalStateResponse> {
   const payload = {
     filter_enabled: filter.enabled,
@@ -55,6 +58,8 @@ export async function applyAllDsp(
     echo_feedback: effects.echo_feedback,
     echo_taps: effects.echo_taps,
     echo_mix: effects.echo_mix,
+    voice_effect: effects.voice_effect,
+    target_track: targetTrack,
   };
   const res = await api.post<SignalStateResponse>('/api/process/all', payload);
   return res.data;

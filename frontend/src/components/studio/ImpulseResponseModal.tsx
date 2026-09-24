@@ -17,7 +17,7 @@ export default function ImpulseResponseModal() {
   const n0 = Math.round((effects.echo_delay_ms / 1000) * fs);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/40 backdrop-blur-none animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="bg-surface rounded-ios-2xl max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto border border-hairline shadow-xl w-full p-4 sm:p-6 space-y-4 select-none">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-hairline">

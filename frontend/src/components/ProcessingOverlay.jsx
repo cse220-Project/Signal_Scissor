@@ -12,7 +12,7 @@ const TASK_META = {
   filter:   { icon: <SlidersHorizontal size={28} />, title: 'Fourier Band Filter',   sub: 'Computing FFT, applying band operation…'      },
   effects:  { icon: <Waves             size={28} />, title: 'Acoustic Effects Chain', sub: 'Scaling, delaying, convolving impulse…'         },
   pipeline: { icon: <Cpu              size={28} />, title: 'Full DSP Pipeline',      sub: 'Running complete filter + effects chain…'       },
-  upload:   { icon: <Upload            size={28} />, title: 'Loading Audio File',     sub: 'Parsing WAV, resampling, generating waveform…' },
+  upload:   { icon: <Upload            size={28} />, title: 'Loading Audio File',     sub: '' },
   signal:   { icon: <Waves             size={28} />, title: 'Generating Signal',      sub: 'Synthesizing test tones with numpy…'           },
 };
 
@@ -204,7 +204,7 @@ export default function ProcessingOverlay({ isVisible, taskType = 'pipeline', on
                 ◉ PROCESSING
               </div>
               <h2 style={{
-                fontFamily: 'var(--font-display, Abril Fatface, serif)',
+                fontFamily: 'var(--font-display, "Liberation Sans", sans-serif)',
                 fontSize: '20px', fontWeight: '400',
                 color: '#1f2328', lineHeight: '1.2', marginBottom: '6px'
               }}>

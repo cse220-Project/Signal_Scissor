@@ -8,6 +8,8 @@ interface SpectrumCanvasProps {
   dominantFreq?: number;
   height?: number;
   className?: string;
+  showOriginal?: boolean;
+  showProcessed?: boolean;
 }
 
 export default function SpectrumCanvas({
@@ -17,6 +19,8 @@ export default function SpectrumCanvas({
   dominantFreq,
   height = 140,
   className = '',
+  showOriginal = true,
+  showProcessed = true,
 }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hoverInfo, setHoverInfo] = useState<{ x: number; y: number; freq: number; db: number } | null>(null);
@@ -26,6 +30,8 @@ export default function SpectrumCanvas({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const isDark = document.documentElement.classList.contains('dark');
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -56,12 +62,16 @@ export default function SpectrumCanvas({
       return (freq / nyquist) * width;
     };
 
+    // Color tokens
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+    const textColor = isDark ? 'rgba(255, 255, 255, 0.65)' : '#64748b';
+
     // Draw horizontal dB grid lines
     const dbLines = [-60, -40, -20, 0];
-    ctx.strokeStyle = 'rgba(31, 35, 40, 0.07)';
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
-    ctx.fillStyle = '#626975';
-    ctx.font = '9px Outfit, sans-serif';
+    ctx.fillStyle = textColor;
+    ctx.font = '9px "IBM Plex Mono", monospace';
     ctx.textAlign = 'right';
 
     dbLines.forEach((db) => {
@@ -89,10 +99,11 @@ export default function SpectrumCanvas({
     if (filterBand && filterBand[0] < filterBand[1]) {
       const x1 = Math.max(0, freqToX(filterBand[0]));
       const x2 = Math.min(width, freqToX(filterBand[1]));
-      ctx.fillStyle = 'rgba(228, 222, 242, 0.45)';
+
+      ctx.fillStyle = isDark ? 'rgba(139, 92, 246, 0.22)' : 'rgba(167, 139, 250, 0.18)';
       ctx.fillRect(x1, paddingTop, x2 - x1, plotHeight);
 
-      ctx.strokeStyle = 'rgba(31, 35, 40, 0.3)';
+      ctx.strokeStyle = isDark ? 'rgba(196, 181, 253, 0.7)' : 'rgba(124, 58, 237, 0.6)';
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
       ctx.moveTo(x1, paddingTop);
@@ -104,13 +115,24 @@ export default function SpectrumCanvas({
     }
 
     // Function to render spectrum curve
-    const renderCurve = (spec: SpectrumPayload, color: string, lineWidth: number, isGhost: boolean) => {
+    const renderCurve = (
+      spec: SpectrumPayload,
+      color: string,
+      fillColor: string | null,
+      lineWidth: number,
+      glow: boolean
+    ) => {
       if (!spec.freqs || spec.freqs.length === 0) return;
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = lineWidth;
-      ctx.beginPath();
 
+      if (glow) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = isDark ? 6 : 3;
+      }
+
+      ctx.beginPath();
       for (let i = 0; i < spec.freqs.length; i++) {
         const x = freqToX(spec.freqs[i]);
         const y = dbToY(spec.mag_db[i]);
@@ -119,41 +141,54 @@ export default function SpectrumCanvas({
       }
       ctx.stroke();
 
-      if (!isGhost) {
-        // Fill area under processed curve
+      if (fillColor) {
         ctx.lineTo(width, height - paddingBottom);
         ctx.lineTo(0, height - paddingBottom);
         ctx.closePath();
-        ctx.fillStyle = 'rgba(38, 33, 28, 0.05)';
+        ctx.fillStyle = fillColor;
         ctx.fill();
       }
       ctx.restore();
     };
 
-    // 1. Draw Original spectrum (Ghost line)
-    if (originalSpectrum) {
-      renderCurve(originalSpectrum, 'rgba(140, 149, 159, 0.5)', 1, true);
+    // 1. Draw Original spectrum (Track A: Electric Cyan)
+    if (showOriginal && originalSpectrum) {
+      const origColor = isDark ? '#38bdf8' : '#0284c7';
+      renderCurve(
+        originalSpectrum,
+        origColor,
+        showProcessed ? null : (isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.10)'),
+        showProcessed ? 1.25 : 1.75,
+        false
+      );
     }
 
-    // 2. Draw Processed spectrum (Primary curve)
-    if (processedSpectrum) {
-      renderCurve(processedSpectrum, '#1F2A44', 1.8, false);
+    // 2. Draw Processed spectrum (Track B: Vibrant Emerald)
+    if (showProcessed && processedSpectrum) {
+      const procColor = isDark ? '#34d399' : '#059669';
+      const procFill = isDark ? 'rgba(52, 211, 153, 0.18)' : 'rgba(5, 150, 105, 0.12)';
+      renderCurve(processedSpectrum, procColor, procFill, 1.85, true);
     }
 
-    // 3. Mark Dominant Frequency
+    // 3. Mark Dominant Frequency Peak
     if (dominantFreq && dominantFreq > 20 && dominantFreq <= nyquist) {
       const domX = freqToX(dominantFreq);
-      ctx.fillStyle = '#8B3A3A';
+      const peakColor = isDark ? '#fbbf24' : '#e11d48';
+
+      ctx.save();
+      ctx.fillStyle = peakColor;
+      ctx.shadowColor = peakColor;
+      ctx.shadowBlur = 4;
       ctx.beginPath();
-      ctx.arc(domX, paddingTop + 6, 3, 0, Math.PI * 2);
+      ctx.arc(domX, paddingTop + 6, 3.5, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#8B3A3A';
-      ctx.font = '10px Outfit, sans-serif';
+      ctx.font = '10px "IBM Plex Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`${Math.round(dominantFreq)} Hz (Peak)`, domX, paddingTop + 20);
+      ctx.fillText(`${Math.round(dominantFreq)} Hz`, domX, paddingTop + 20);
+      ctx.restore();
     }
-  }, [originalSpectrum, processedSpectrum, filterBand, dominantFreq, height]);
+  }, [originalSpectrum, processedSpectrum, filterBand, dominantFreq, height, showOriginal, showProcessed]);
 
   const handleMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -191,10 +226,10 @@ export default function SpectrumCanvas({
       {hoverInfo && (
         <div
           style={{
-            left: `${Math.min(hoverInfo.x + 10, 200)}px`,
+            left: `${Math.min(hoverInfo.x + 10, 220)}px`,
             top: '8px',
           }}
-          className="pointer-events-none absolute bg-surface px-2.5 py-1 rounded-ios-md text-[11px] font-mono text-ink-primary border border-hairline"
+          className="pointer-events-none absolute bg-card px-2.5 py-1 rounded-md text-[11px] font-mono text-foreground border border-border shadow-md"
         >
           {hoverInfo.freq} Hz · {hoverInfo.db} dB
         </div>

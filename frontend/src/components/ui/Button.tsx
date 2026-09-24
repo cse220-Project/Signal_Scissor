@@ -25,11 +25,11 @@ export default function Button({
   const base = 'inline-flex items-center justify-center rounded-[6px] border font-medium transition-[background-color,box-shadow,transform] duration-150 enabled:active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed select-none';
 
   const variants = {
-    primary: 'bg-navy text-white border-navy enabled:hover:bg-navy-hover enabled:hover:shadow-sm',
-    secondary: 'bg-transparent text-navy border-navy enabled:hover:bg-lavender-soft',
-    ghost: 'bg-transparent border-transparent text-ink-secondary enabled:hover:text-navy enabled:hover:bg-surface-raised',
-    destructive: 'bg-error text-white border-error enabled:hover:opacity-90 enabled:hover:shadow-sm',
-    pill: 'bg-surface-raised text-navy border-hairline enabled:hover:bg-lavender-soft',
+    primary: 'bg-primary text-primary-foreground border-primary enabled:hover:opacity-90 enabled:hover:shadow-sm',
+    secondary: 'bg-secondary text-secondary-foreground border-border enabled:hover:bg-accent',
+    ghost: 'bg-transparent border-transparent text-muted-foreground enabled:hover:text-foreground enabled:hover:bg-accent',
+    destructive: 'bg-destructive text-white border-destructive enabled:hover:opacity-90 enabled:hover:shadow-sm',
+    pill: 'bg-secondary text-secondary-foreground border-border enabled:hover:bg-accent',
   };
 
   const sizes = {

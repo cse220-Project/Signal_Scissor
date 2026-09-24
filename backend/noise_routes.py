@@ -151,6 +151,37 @@ def remove_noise(
         file.file.close()
 
 
+@router.post("/current")
+def remove_noise_current(
+    level: Annotated[str, Form()] = "balanced",
+    target_track: Annotated[str, Form()] = "processed",
+):
+    try:
+        from server import state, signal_to_wav_bytes
+        if target_track == "original" and state.signal is not None:
+            audio_data = state.signal
+        elif state.processed is not None:
+            audio_data = state.processed
+        else:
+            audio_data = state.signal
+
+        if audio_data is None:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "No active audio loaded in workstation."}
+            )
+        wav_bytes = signal_to_wav_bytes(audio_data, state.fs)
+        filename = f"{state.source_name or 'current_audio'}_{target_track}.wav"
+        return service.process_bytes(wav_bytes, filename, level)
+    except NoiseError as exc:
+        return JSONResponse(status_code=exc.status, content={"detail": exc.detail})
+    except Exception as exc:
+        logger.exception("Failed to process current audio")
+        return JSONResponse(status_code=500, content={"detail": "Failed to process active workstation audio."})
+
+
+
+
 @router.get("/{token}/audio")
 def noise_audio(token: str, download: bool = False):
     try:

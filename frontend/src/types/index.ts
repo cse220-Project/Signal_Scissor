@@ -3,6 +3,15 @@ export interface WaveformPayload {
   min_val: number;
   max_val: number;
   count: number;
+  /** A short, frequency-aware trace used when the full overview would hide cycles. */
+  preview?: {
+    peaks: number[];
+    min_val: number;
+    max_val: number;
+    count: number;
+    duration: number;
+    start_time: number;
+  };
 }
 
 export interface SpectrumPayload {
@@ -21,6 +30,12 @@ export interface SignalStats {
   dominant_freq: number;
 }
 
+export interface SpectrogramPayload {
+  times: number[];
+  freqs: number[];
+  mag_db: number[][]; // [freq_bin][time_bin]
+}
+
 export interface SignalStateResponse {
   loaded: boolean;
   source_name?: string;
@@ -35,6 +50,8 @@ export interface SignalStateResponse {
   processed_waveform?: WaveformPayload;
   original_spectrum?: SpectrumPayload;
   processed_spectrum?: SpectrumPayload;
+  original_spectrogram?: SpectrogramPayload;
+  processed_spectrogram?: SpectrogramPayload;
   stats?: SignalStats;
   original_stats?: SignalStats;
   last_band?: [number, number] | null;
@@ -47,6 +64,7 @@ export interface FilterParams {
   high_freq: number;
   operation: 'cut' | 'keep' | 'attenuate' | 'amplify';
   strength?: number;
+  target_track?: 'original' | 'processed';
 }
 
 export interface EffectsParams {
@@ -58,6 +76,8 @@ export interface EffectsParams {
   echo_feedback: number;
   echo_taps: number;
   echo_mix: number;
+  voice_effect?: string | null;
+  target_track?: 'original' | 'processed';
 }
 
 export interface ImpulseResponseStem {

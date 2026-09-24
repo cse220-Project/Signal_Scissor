@@ -19,7 +19,7 @@ export default function Signals() {
 
   const generateCustomTone = async () => {
     // Generate PCM in browser and upload as WAV
-    const sampleRate = 8000;
+    const sampleRate = Math.max(8000, Math.min(240000, Math.ceil(customFreq * 2.4)));
     const numSamples = Math.floor(sampleRate * customDuration);
     const buffer = new Float32Array(numSamples);
 
@@ -74,10 +74,10 @@ export default function Signals() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-semibold text-ink-primary tracking-tight">
-            Signal Generator & Capture Lab
+            <span className="trademark-signal">SIGNAL</span> Generator &amp; Capture Lab
           </h1>
-          <p className="text-[13px] text-ink-secondary">
-            Synthesize benchmark sinusoids, impulse bursts, noise patterns, or record live microphone signals.
+          <p className="text-[13px] text-ink-secondary max-w-2xl">
+            Synthesize benchmark sinusoids, impulse bursts, noise patterns, or record live microphone <span className="trademark-signal">SIGNAL</span>s.
           </p>
         </div>
 
@@ -92,180 +92,182 @@ export default function Signals() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left Column: All Input Sources (Sine Synthesizer, Presets, Mic) */}
         <div className="lg:col-span-5 space-y-4">
-      {/* Pure Sine Generator */}
-      <Card variant="pastel-peach" className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b border-hairline">
-          <span className="material-symbols-outlined text-[19px] text-ink-primary">tune</span>
-          <h3 className="text-[15px] font-semibold text-ink-primary">Parametric Pure Sine Synthesizer</h3>
-        </div>
+          {/* Pure Sine Generator */}
+          <Card variant="pastel-peach" className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-hairline">
+              <span className="material-symbols-outlined text-[19px] text-ink-primary">tune</span>
+              <h3 className="text-[15px] font-semibold text-ink-primary">Parametric Pure Sine Synthesizer</h3>
+            </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          <Slider
-            label="Carrier Frequency (f₀)"
-            value={customFreq}
-            min={50}
-            max={3800}
-            step={10}
-            unit="Hz"
-            onChange={setCustomFreq}
-          />
-
-          <Slider
-            label="Duration"
-            value={customDuration}
-            min={0.5}
-            max={4.0}
-            step={0.5}
-            unit="s"
-            onChange={setCustomDuration}
-          />
-        </div>
-
-        <div className="flex justify-end pt-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            icon="add_circle"
-            loading={isLoading}
-            onClick={generateCustomTone}
-          >
-            Generate & Load Sine Wave
-          </Button>
-        </div>
-      </Card>
-        {/* Synthetic Signals Card */}
-        <Card variant="pastel-cream" className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-hairline">
-            <span className="material-symbols-outlined text-[19px] text-ink-primary">auto_graph</span>
-            <h3 className="text-[15px] font-semibold text-ink-primary">CSE 220 Test Presets</h3>
-          </div>
-
-          <p className="text-[12px] text-ink-secondary leading-relaxed">
-            Deterministic laboratory signals designed for verifying FFT bin identification, bandpass filtering, and echo reflections.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
-            <Button
-              variant="pill"
-              size="sm"
-              loading={isLoading}
-              onClick={() => loadPreset('tones')}
-            >
-              Multi-Tone (200, 1k, 2.5k)
-            </Button>
-
-            <Button
-              variant="pill"
-              size="sm"
-              loading={isLoading}
-              onClick={() => loadPreset('pulse')}
-            >
-              Hann Pulse Burst (440Hz)
-            </Button>
-
-            <Button
-              variant="pill"
-              size="sm"
-              loading={isLoading}
-              onClick={() => loadPreset('noise')}
-            >
-              Tone (300Hz) + Noise
-            </Button>
-
-            <Button
-              variant="pill"
-              size="sm"
-              loading={isLoading}
-              onClick={() => loadPreset('multitone')}
-            >
-              Harmonic Chord (4 Tones)
-            </Button>
-          </div>
-        </Card>
-
-        </div>
-        <div className="lg:col-span-7 space-y-4">
-      {/* Active Signal Preview Card */}
-      <div className="bg-pastel-blue rounded-ios-2xl p-5 md:p-6 space-y-4 select-none">
-        <div className="panel-heading pb-2 border-b border-hairline">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-ink-primary">preview</span>
-            <span className="text-[14px] font-semibold text-ink-primary">
-              Active Signal: {signalState?.source_name || 'Standard Multi-Tone'}
-            </span>
-          </div>
-          <span className="text-[11px] font-mono text-ink-secondary">
-            {signalState?.sample_rate || 8000} Hz · {duration.toFixed(2)}s
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5">
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-wider text-ink-tertiary block mb-1.5">
-              Waveform x[n]
-            </span>
-            <WaveformCanvas
-              originalWaveform={signalState?.original_waveform}
-              processedWaveform={signalState?.processed_waveform}
-              duration={duration}
-              currentTime={currentTime}
-              activeTrack={activeTrack}
-              height={110}
-            />
-          </div>
-
-          <div>
-            <span className="text-[11px] font-medium uppercase tracking-wider text-ink-tertiary block mb-1.5">
-              Spectrum |X(f)| (dB)
-            </span>
-            <SpectrumCanvas
-              originalSpectrum={signalState?.original_spectrum}
-              processedSpectrum={signalState?.processed_spectrum}
-              dominantFreq={signalState?.stats?.dominant_freq}
-              height={110}
-            />
-          </div>
-        </div>
-      </div>
-
-        {/* Live Microphone Recording Card */}
-        <Card variant="pastel-green" className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-hairline">
-            <span className="material-symbols-outlined text-[19px] text-ink-primary">mic</span>
-            <h3 className="text-[15px] font-semibold text-ink-primary">Live Microphone Capture</h3>
-          </div>
-
-          <p className="text-[12px] text-ink-secondary leading-relaxed">
-            Capture speech, whistling, or acoustic sounds from your computer microphone to test real-world Fourier filtering and convolution echo.
-          </p>
-
-          <div className="bg-surface-raised rounded-ios-lg p-4 text-center space-y-3">
-            <div className="flex items-center justify-center gap-2">
-              <span
-                className={`w-3 h-3 rounded-full ${
-                  isRecording ? 'bg-error animate-pulse' : 'bg-ink-tertiary'
-                }`}
+            <div className="grid grid-cols-1 gap-4">
+              <Slider
+                label="Carrier Frequency (f₀)"
+                value={customFreq}
+                min={0}
+                max={100000}
+                step={10}
+                unit="Hz"
+                onChange={setCustomFreq}
               />
-              <span className="font-mono text-[14px] font-medium text-ink-primary">
-                {isRecording ? `${recordDuration.toFixed(1)}s Recording...` : 'Ready to record'}
+
+              <Slider
+                label="Duration"
+                value={customDuration}
+                min={0.5}
+                max={60}
+                step={0.5}
+                unit="s"
+                onChange={setCustomDuration}
+              />
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="add_circle"
+                loading={isLoading}
+                onClick={generateCustomTone}
+              >
+                Generate & Load Sine Wave
+              </Button>
+            </div>
+          </Card>
+
+          {/* Synthetic Signals Card */}
+          <Card variant="pastel-cream" className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-hairline">
+              <span className="material-symbols-outlined text-[19px] text-ink-primary">auto_graph</span>
+              <h3 className="text-[15px] font-semibold text-ink-primary">CSE 220 Test Presets</h3>
+            </div>
+
+            <p className="text-[12px] text-ink-secondary leading-relaxed">
+              Deterministic laboratory signals designed for verifying FFT bin identification, bandpass filtering, and echo reflections.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
+              <Button
+                variant="pill"
+                size="sm"
+                loading={isLoading}
+                onClick={() => loadPreset('tones')}
+              >
+                Multi-Tone (200, 1k, 2.5k)
+              </Button>
+
+              <Button
+                variant="pill"
+                size="sm"
+                loading={isLoading}
+                onClick={() => loadPreset('pulse')}
+              >
+                Hann Pulse Burst (440Hz)
+              </Button>
+
+              <Button
+                variant="pill"
+                size="sm"
+                loading={isLoading}
+                onClick={() => loadPreset('noise')}
+              >
+                Tone (300Hz) + Noise
+              </Button>
+
+              <Button
+                variant="pill"
+                size="sm"
+                loading={isLoading}
+                onClick={() => loadPreset('multitone')}
+              >
+                Harmonic Chord (4 Tones)
+              </Button>
+            </div>
+          </Card>
+
+          {/* Live Microphone Recording Card */}
+          <Card variant="pastel-green" className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-hairline">
+              <span className="material-symbols-outlined text-[19px] text-ink-primary">mic</span>
+              <h3 className="text-[15px] font-semibold text-ink-primary">Live Microphone Capture</h3>
+            </div>
+
+            <p className="text-[12px] text-ink-secondary leading-relaxed">
+              Capture speech, whistling, or acoustic sounds from your microphone to test real-world DSP workflows.
+            </p>
+
+            <div className="bg-surface-raised rounded-ios-lg p-4 text-center space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <span
+                  className={`w-3 h-3 rounded-full ${
+                    isRecording ? 'bg-error animate-pulse' : 'bg-ink-tertiary'
+                  }`}
+                />
+                <span className="font-mono text-[14px] font-medium text-ink-primary">
+                  {isRecording ? `${recordDuration.toFixed(1)}s Recording...` : 'Ready to record'}
+                </span>
+              </div>
+
+              {recordError && (
+                <p className="text-error text-[11px]">{recordError}</p>
+              )}
+
+              <Button
+                variant={isRecording ? 'destructive' : 'primary'}
+                size="md"
+                icon={isRecording ? 'stop' : 'mic'}
+                onClick={isRecording ? stopRecording : startRecording}
+              >
+                {isRecording ? 'Stop & Load Recording' : 'Start Recording'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column: Active Signal Preview Visualizer */}
+        <div className="lg:col-span-7 space-y-4 sticky top-6">
+          <div className="bg-pastel-blue rounded-ios-2xl p-5 md:p-6 space-y-4 select-none">
+            <div className="panel-heading pb-2 border-b border-hairline">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-ink-primary">preview</span>
+                <span className="text-[14px] font-semibold text-ink-primary">
+                  Active Signal: {signalState?.source_name || 'Standard Multi-Tone'}
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-ink-secondary">
+                {signalState?.sample_rate || 8000} Hz · {duration.toFixed(2)}s
               </span>
             </div>
 
-            {recordError && (
-              <p className="text-error text-[11px]">{recordError}</p>
-            )}
+            <div className="grid grid-cols-1 gap-5">
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-ink-tertiary block mb-1.5">
+                  Waveform x[n]
+                </span>
+                <WaveformCanvas
+                  originalWaveform={signalState?.original_waveform}
+                  processedWaveform={signalState?.processed_waveform}
+                  duration={duration}
+                  currentTime={currentTime}
+                  activeTrack={activeTrack}
+                  height={130}
+                />
+              </div>
 
-            <Button
-              variant={isRecording ? 'destructive' : 'primary'}
-              size="md"
-              icon={isRecording ? 'stop' : 'mic'}
-              onClick={isRecording ? stopRecording : startRecording}
-            >
-              {isRecording ? 'Stop & Load Recording' : 'Start Recording'}
-            </Button>
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-ink-tertiary block mb-1.5">
+                  Spectrum |X(f)| (dB)
+                </span>
+                <SpectrumCanvas
+                  originalSpectrum={signalState?.original_spectrum}
+                  processedSpectrum={signalState?.processed_spectrum}
+                  dominantFreq={signalState?.stats?.dominant_freq}
+                  height={130}
+                />
+              </div>
+            </div>
           </div>
-        </Card>
         </div>
       </div>
     </div>

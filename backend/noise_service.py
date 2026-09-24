@@ -46,14 +46,12 @@ def validate_upload(filename, content_type, level):
             422, "Choose a noise-reduction level: light, balanced, or strong."
         )
     suffix = Path(filename or "").suffix.lower()
-    if suffix not in FORMATS:
-        raise NoiseError(415, "Supported audio formats are WAV, MP3, M4A, and AAC.")
     mime = (content_type or "application/octet-stream").split(";", 1)[0].strip().lower()
-    if mime not in FORMATS[suffix] | {"application/octet-stream"}:
+    if mime != "application/octet-stream" and not mime.startswith("audio/"):
         raise NoiseError(
-            415, "The file's content type does not match its audio extension."
+            415, "Choose an audio file."
         )
-    return suffix
+    return suffix if suffix and len(suffix) <= 12 else ".audio"
 
 
 def validate_signature(header, suffix):
@@ -158,8 +156,6 @@ class NoiseService:
                 "error",
                 "-protocol_whitelist",
                 "file",
-                "-format_whitelist",
-                "wav,mp3,aac,mov",
                 "-show_entries",
                 "format=format_name,duration:stream=codec_type,codec_name,sample_rate,channels",
                 "-of",
@@ -182,21 +178,6 @@ class NoiseService:
             stream = audio[0]
             rate = int(stream["sample_rate"])
             channels = int(stream["channels"])
-            format_name = data["format"]["format_name"].split(",")
-            expected = {".wav": "wav", ".mp3": "mp3", ".aac": "aac", ".m4a": "mov"}[
-                suffix
-            ]
-            codec = stream["codec_name"]
-            codec_ok = (suffix == ".wav" and codec.startswith("pcm_")) or codec in {
-                ".mp3": {"mp3"},
-                ".aac": {"aac"},
-                ".m4a": {"aac", "alac"},
-            }.get(suffix, set())
-            if expected not in format_name or not codec_ok:
-                raise NoiseError(
-                    415,
-                    "The audio container or codec is not supported for this extension.",
-                )
             if not 8000 <= rate <= 96000 or channels not in (1, 2):
                 raise NoiseError(
                     415,
@@ -236,12 +217,155 @@ class NoiseService:
                         output.write(chunk)
                 if size == 0:
                     raise NoiseError(400, "The uploaded file is empty.")
-                with source.open("rb") as handle:
-                    validate_signature(handle.read(16), suffix)
                 rate, channels = self.inspect(source, ffprobe, deadline, suffix)
                 decoded = directory / "decoded.wav"
                 # Decode fully before filtering. A bounded extra second detects
                 # files whose duration metadata understates their real duration.
+                self.run(
+                    [
+                        ffmpeg,
+                        "-nostdin",
+                        "-hide_banner",
+                        "-v",
+                        "error",
+                        "-xerror",
+                        "-protocol_whitelist",
+                        "file",
+                        "-threads",
+                        "1",
+                        "-i",
+                        str(source),
+                        "-map",
+                        "0:a:0",
+                        "-vn",
+                        "-sn",
+                        "-dn",
+                        "-map_metadata",
+                        "-1",
+                        "-t",
+                        str(self.config.max_duration + 1),
+                        "-ac",
+                        str(channels),
+                        "-ar",
+                        str(rate),
+                        "-c:a",
+                        "pcm_f32le",
+                        str(decoded),
+                    ],
+                    deadline,
+                    directory,
+                    invalid_input=True,
+                )
+                fs, samples = wavfile.read(decoded, mmap=True)
+                try:
+                    frame_count = len(samples)
+                    duration = frame_count / fs
+                    if duration <= 0:
+                        raise NoiseError(400, "The file contains no audio samples.")
+                    if duration > self.config.max_duration:
+                        raise NoiseError(
+                            413,
+                            f"Audio must be no longer than {self.config.max_duration} seconds.",
+                        )
+                    for start in range(0, len(samples), 65536):
+                        if not np.isfinite(samples[start : start + 65536]).all():
+                            raise NoiseError(
+                                400, "Audio contains invalid, non-finite samples."
+                            )
+                    measured_floor = estimate_noise_floor(samples, fs)
+                finally:
+                    if isinstance(samples, np.memmap):
+                        samples._mmap.close()
+                cleaned = directory / "cleaned.wav"
+                self.run(
+                    [
+                        ffmpeg,
+                        "-nostdin",
+                        "-hide_banner",
+                        "-v",
+                        "error",
+                        "-xerror",
+                        "-protocol_whitelist",
+                        "file",
+                        "-threads",
+                        "1",
+                        "-i",
+                        str(decoded),
+                        "-filter_threads",
+                        "1",
+                        "-af",
+                        filter_chain(level, measured_floor, fs, frame_count),
+                        "-map_metadata",
+                        "-1",
+                        "-c:a",
+                        "pcm_s16le",
+                        str(cleaned),
+                    ],
+                    deadline,
+                    directory,
+                )
+                result_rate, result_samples = wavfile.read(cleaned, mmap=True)
+                try:
+                    result_channels = (
+                        1 if result_samples.ndim == 1 else result_samples.shape[1]
+                    )
+                    if result_samples.dtype != np.int16 or result_channels != channels:
+                        raise NoiseError(
+                            500,
+                            "Noise removal produced an invalid output. Please try again.",
+                        )
+                    result_duration = len(result_samples) / result_rate
+                    if len(result_samples) != frame_count or result_rate != fs:
+                        raise NoiseError(
+                            500,
+                            "Noise removal produced an incomplete output. Please try again.",
+                        )
+                finally:
+                    if isinstance(result_samples, np.memmap):
+                        result_samples._mmap.close()
+                original_name = safe_filename(upload.filename)
+                size = cleaned.stat().st_size
+                token, _ = self.storage.publish(cleaned)
+                output_name = f"cleaned-{token[:12]}.wav"
+                return {
+                    "status": "completed",
+                    "id": token,
+                    "level": level,
+                    "original_filename": original_name,
+                    "output_filename": output_name,
+                    "output_format": "wav",
+                    "file_size": size,
+                    "duration": result_duration,
+                    "sample_rate": rate,
+                    "channels": channels,
+                    "expires_at": int(time.time()) + self.config.retention,
+                    "preview_url": f"/api/noise-removal/{token}/audio",
+                    "download_url": f"/api/noise-removal/{token}/audio?download=true",
+                }
+        except NoiseError:
+            raise
+        except Exception as exc:
+            logger.exception("Unexpected noise-removal failure")
+            raise NoiseError(
+                500, "Noise removal failed. Please try again later."
+            ) from exc
+        finally:
+            self.slots.release()
+    def process_bytes(self, content: bytes, filename: str, level: str):
+        suffix = validate_upload(filename, "audio/wav", level)
+        ffmpeg, ffprobe = self.dependencies()
+        if not self.slots.acquire(blocking=False):
+            raise NoiseError(503, "Noise removal is busy. Please try again shortly.")
+        try:
+            deadline = time.monotonic() + self.config.timeout
+            with self.storage.workspace() as directory:
+                source = directory / f"input{suffix}"
+                with source.open("xb") as output:
+                    output.write(content)
+                if len(content) == 0:
+                    raise NoiseError(400, "The audio content is empty.")
+                rate, channels = self.inspect(source, ffprobe, deadline, suffix)
+                decoded = directory / "decoded.wav"
                 self.run(
                     [
                         ffmpeg,
@@ -346,7 +470,7 @@ class NoiseService:
                 finally:
                     if isinstance(result_samples, np.memmap):
                         result_samples._mmap.close()
-                original_name = safe_filename(upload.filename)
+                original_name = safe_filename(filename)
                 size = cleaned.stat().st_size
                 token, _ = self.storage.publish(cleaned)
                 output_name = f"cleaned-{token[:12]}.wav"

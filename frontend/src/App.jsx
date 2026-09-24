@@ -531,13 +531,13 @@ export default function App() {
 
           {viewMode === 'waveforms' && (<>
             <WaveformVisualizer
-              title="Original Input Signal Trace"
-              tag="RAW x[n]"
+              title="Original Input SIGNAL Trace"
+              tag="ORIGINAL x[n]"
               waveform={signalData?.original_waveform}
               duration={signalData?.duration || 2.0}
-              color="#596f84"
-              gradientTop="rgba(89, 111, 132, 0.45)"
-              gradientBot="rgba(89, 111, 132, 0.05)"
+              color="#0284c7"
+              gradientTop="rgba(2, 132, 199, 0.45)"
+              gradientBot="rgba(2, 132, 199, 0.04)"
               currentTime={currentTime}
               onSeek={handleSeek}
               height={252}
@@ -546,15 +546,15 @@ export default function App() {
               processedDuration={signalData?.processed_duration}
             />
             <WaveformVisualizer
-              title="Processed Output Signal Trace (Echo + Filters)"
-              tag="MODIFIED y[n]"
+              title="Processed Output SIGNAL Trace"
+              tag="PROCESSED y[n]"
               waveform={signalData?.processed_waveform}
               secondaryWaveform={signalData?.original_waveform}
               duration={signalData?.duration || 2.0}
-              color="#45404f"
-              gradientTop="rgba(69, 64, 79, 0.50)"
-              gradientBot="rgba(69, 64, 79, 0.05)"
-              secondaryColor="rgba(89, 111, 132, 0.45)"
+              color="#059669"
+              gradientTop="rgba(5, 150, 105, 0.50)"
+              gradientBot="rgba(5, 150, 105, 0.04)"
+              secondaryColor="rgba(2, 132, 199, 0.40)"
               currentTime={currentTime}
               onSeek={handleSeek}
               height={252}
@@ -579,15 +579,15 @@ export default function App() {
 
           {viewMode === 'split' && (<>
             <WaveformVisualizer
-              title="A/B Waveform Overlay & Difference Analysis"
+              title="A/B Waveform Overlay & Trace Analysis"
               tag="A/B OVERLAY"
               waveform={signalData?.processed_waveform}
               secondaryWaveform={signalData?.original_waveform}
               duration={signalData?.duration || 2.0}
-              color="#45404f"
-              gradientTop="rgba(69, 64, 79, 0.45)"
-              gradientBot="rgba(69, 64, 79, 0.05)"
-              secondaryColor="rgba(89, 111, 132, 0.5)"
+              color="#059669"
+              gradientTop="rgba(5, 150, 105, 0.45)"
+              gradientBot="rgba(5, 150, 105, 0.04)"
+              secondaryColor="rgba(2, 132, 199, 0.45)"
               currentTime={currentTime}
               onSeek={handleSeek}
               height={252}

@@ -65,7 +65,7 @@ def positive_int(name, default, maximum):
 
 @dataclass(frozen=True)
 class NoiseConfig:
-    max_bytes: int = 25 * 1024 * 1024
+    max_bytes: int = 60 * 1024 * 1024
     max_duration: int = 300
     timeout: int = 120
     retention: int = 3600
@@ -78,7 +78,7 @@ class NoiseConfig:
     @classmethod
     def from_env(cls):
         return cls(
-            max_bytes=positive_int("NOISE_MAX_UPLOAD_MB", 25, 500) * 1024 * 1024,
+            max_bytes=positive_int("NOISE_MAX_UPLOAD_MB", 60, 500) * 1024 * 1024,
             max_duration=positive_int("NOISE_MAX_DURATION_SECONDS", 300, 3600),
             timeout=positive_int("NOISE_PROCESS_TIMEOUT_SECONDS", 120, 900),
             retention=positive_int("NOISE_RETENTION_SECONDS", 3600, 604800),

@@ -63,7 +63,7 @@ export default function TransportBar() {
             onClick={() => handleTrackChange('original')}
             className={`px-3.5 py-1.5 rounded-pill text-[13px] font-medium transition-all ${
               activeTrack === 'original'
-                ? 'bg-navy text-white font-semibold'
+                ? 'bg-primary text-primary-foreground font-semibold'
                 : 'text-ink-secondary hover:text-ink-primary'
             }`}
           >
@@ -73,7 +73,7 @@ export default function TransportBar() {
             onClick={() => handleTrackChange('processed')}
             className={`px-3.5 py-1.5 rounded-pill text-[13px] font-medium transition-all ${
               activeTrack === 'processed'
-                ? 'bg-navy text-white font-semibold'
+                ? 'bg-primary text-primary-foreground font-semibold'
                 : 'text-ink-secondary hover:text-ink-primary'
             }`}
           >

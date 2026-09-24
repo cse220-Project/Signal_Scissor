@@ -54,6 +54,23 @@ export async function removeNoise(
   return response.data;
 }
 
+export async function removeNoiseCurrent(
+  level: NoiseLevel,
+  config: NoiseConfig,
+  signal: AbortSignal,
+  targetTrack: 'original' | 'processed' = 'processed'
+): Promise<NoiseResult> {
+  const data = new FormData();
+  data.append("level", level);
+  data.append("target_track", targetTrack);
+  const response = await api.post("/api/noise-removal/current", data, {
+    signal,
+    timeout: (config.timeout_seconds + 60) * 1000,
+  });
+  return response.data;
+}
+
 export function noiseMediaUrl(path: string): string {
   return api.getUri({ url: path });
 }
+

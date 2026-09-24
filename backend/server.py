@@ -10,8 +10,11 @@ Wraps authentic CSE 220 signal processing algorithms:
 import io
 import logging
 import os
+import shutil
+import subprocess
 import tempfile
 import numpy as np
+import scipy.signal
 from scipy.io import wavfile
 # pyrefly: ignore [missing-import]
 from fastapi import FastAPI, UploadFile, File, HTTPException  # type: ignore
@@ -27,7 +30,16 @@ from typing import Optional
 
 from signal_io import generate_test_signal, generate_pulse_signal, load_wav, save_wav
 from fourier_filter import compute_spectrum, band_filter, process_band
-from audio_effects import scale_amplitude, time_shift, convolution_echo, get_echo_impulse_response
+from audio_effects import (
+    scale_amplitude,
+    time_shift,
+    convolution_echo,
+    get_echo_impulse_response,
+    autotune_voice_effect,
+    robotic_voice_effect,
+    baby_voice_effect,
+    monster_voice_effect,
+)
 from signal_analysis import rms, peak_amplitude, dominant_frequency
 from noise_routes import router as noise_router, NoiseUploadLimit
 
@@ -35,6 +47,8 @@ app = FastAPI(title="Signal Scissors DSP Engine", version="2.0.0")
 logger = logging.getLogger(__name__)
 app.include_router(noise_router)
 app.add_middleware(NoiseUploadLimit)
+
+MAX_AUDIO_UPLOAD_BYTES = 60 * 1024 * 1024
 
 # Enable CORS for local Vite dev server
 app.add_middleware(
@@ -136,6 +150,70 @@ def downsample_envelope(signal, max_points=1200, target_length=None):
     }
 
 
+def waveform_preview(signal, fs, dominant_freq):
+    """Return a short, cycle-aware waveform for a readable time-domain plot.
+
+    A full-length envelope is useful for navigation, but a long pure tone makes
+    every screen pixel contain both its minimum and maximum.  This preview
+    keeps roughly four cycles (with enough discrete samples at high
+    frequencies), so a sine wave remains recognisable regardless of recording
+    duration.
+    """
+    signal = np.asarray(signal)
+    if len(signal) == 0:
+        return {"peaks": [], "min_val": 0.0, "max_val": 0.0, "count": 0,
+                "duration": 0.0, "start_time": 0.0}
+
+    # Fall back to a 50 ms look when no meaningful tonal peak is available.
+    if not np.isfinite(dominant_freq) or dominant_freq <= 0:
+        preview_samples = int(round(fs * 0.05))
+    else:
+        preview_samples = int(np.ceil(4 * fs / dominant_freq))
+
+    # At high frequencies four cycles can contain very few samples.  Showing
+    # at least 32 samples gives the user a legible discrete-time trace.
+    preview_samples = min(len(signal), max(32, preview_samples))
+    # Avoid presenting a blank chart for a delayed signal or pulse.  The
+    # preview begins at the first sample that is materially above silence.
+    peak = float(np.max(np.abs(signal)))
+    active = np.flatnonzero(np.abs(signal) >= peak * 0.05) if peak > 0 else np.array([], dtype=int)
+    start = int(active[0]) if len(active) else 0
+    preview = signal[start:start + preview_samples]
+    return {
+        **downsample_envelope(preview, max_points=max(2, 2 * len(preview))),
+        "duration": float(len(preview) / fs),
+        "start_time": float(start / fs),
+    }
+
+
+def compute_spectrogram_payload(signal, fs, max_time_bins=100, max_freq_bins=64):
+    """Computes STFT Spectrogram downsampled grid for responsive visualization."""
+    if signal is None or len(signal) < 128:
+        return {"times": [], "freqs": [], "mag_db": []}
+
+    nperseg = min(256, len(signal))
+    noverlap = nperseg // 2
+    f, t, Sxx = scipy.signal.spectrogram(signal, fs, nperseg=nperseg, noverlap=noverlap)
+
+    mag_db = 20 * np.log10(np.maximum(np.abs(Sxx), 1e-6))
+
+    if len(t) > max_time_bins:
+        step_t = max(1, len(t) // max_time_bins)
+        t = t[::step_t]
+        mag_db = mag_db[:, ::step_t]
+
+    if len(f) > max_freq_bins:
+        step_f = max(1, len(f) // max_freq_bins)
+        f = f[::step_f]
+        mag_db = mag_db[::step_f, :]
+
+    return {
+        "times": t.tolist(),
+        "freqs": f.tolist(),
+        "mag_db": mag_db.tolist()
+    }
+
+
 def compute_spectrum_payload(signal, fs, max_points=1000):
     """
     Computes magnitude spectrum (dB) and decimates for 60 FPS graph rendering.
@@ -146,9 +224,17 @@ def compute_spectrum_payload(signal, fs, max_points=1000):
     
     n = len(freqs)
     if n > max_points:
-        step = max(1, n // max_points)
-        freqs = freqs[::step]
-        mag_db = mag_db[::step]
+        # Never stride through an FFT spectrum: a narrow pure-tone peak can
+        # fall between stride positions and disappear completely.  Instead,
+        # retain the strongest bin in each display bucket (max-hold).
+        edges = np.linspace(0, n, max_points + 1, dtype=int)
+        selected = []
+        for start, end in zip(edges[:-1], edges[1:]):
+            if end <= start:
+                continue
+            selected.append(start + int(np.argmax(mag_db[start:end])))
+        freqs = freqs[selected]
+        mag_db = mag_db[selected]
     
     return {
         "freqs": freqs.tolist(),
@@ -178,7 +264,7 @@ def signal_to_wav_bytes(signal, fs):
 
 
 def get_full_state_payload():
-    """Helper to assemble full waveform, spectrum, and metadata."""
+    """Helper to assemble full waveform, spectrum, spectrogram, and metadata."""
     if state.signal is None:
         return {"loaded": False}
 
@@ -190,10 +276,19 @@ def get_full_state_payload():
     orig_env = downsample_envelope(state.signal, max_points=1200, target_length=max_len)
     proc_env = downsample_envelope(state.processed if state.processed is not None else state.signal, max_points=1200, target_length=max_len)
 
+    original_stats = get_signal_stats(state.signal, state.fs, state.num_channels)
+    processed_signal = state.processed if state.processed is not None else state.signal
+    stats = get_signal_stats(processed_signal, state.fs, state.num_channels)
+    # Keep the overview payload for navigation and attach a cycle-scaled trace
+    # for the graph itself.
+    orig_env["preview"] = waveform_preview(state.signal, state.fs, original_stats["dominant_freq"])
+    proc_env["preview"] = waveform_preview(processed_signal, state.fs, stats["dominant_freq"])
+
     orig_spec = compute_spectrum_payload(state.signal, state.fs)
     proc_spec = compute_spectrum_payload(state.processed, state.fs) if state.processed is not None else orig_spec
 
-    stats = get_signal_stats(state.processed if state.processed is not None else state.signal, state.fs, state.num_channels)
+    orig_sg = compute_spectrogram_payload(state.signal, state.fs)
+    proc_sg = compute_spectrogram_payload(state.processed, state.fs) if state.processed is not None else orig_sg
 
     return {
         "loaded": True,
@@ -209,8 +304,10 @@ def get_full_state_payload():
         "processed_waveform": proc_env,
         "original_spectrum": orig_spec,
         "processed_spectrum": proc_spec,
+        "original_spectrogram": orig_sg,
+        "processed_spectrogram": proc_sg,
         "stats": stats,
-        "original_stats": get_signal_stats(state.signal, state.fs, state.num_channels),
+        "original_stats": original_stats,
         "last_band": state.last_band,
         "last_operation": state.last_operation
     }
@@ -266,29 +363,45 @@ def load_test(preset: str = "tones"):
 
 @app.post("/api/signal/upload")
 async def upload_audio(file: UploadFile = File(...)):
-    """
-    Upload and load a custom WAV audio file using signal_io.load_wav.
-    """
-    tmp_path = None
+    """Load an audio file up to 60 MB, using FFmpeg for format decoding."""
+    source_path = None
+    decoded_path = None
     stage = "reading uploaded file"
     try:
-        content = await file.read()
-        if not content:
-            raise HTTPException(status_code=400, detail="The uploaded WAV file is empty. Choose a non-empty WAV file.")
+        suffix = os.path.splitext(file.filename or "")[1] or ".audio"
+        stage = "storing uploaded file"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            source_path = tmp.name
+            size = 0
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > MAX_AUDIO_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="Audio files must be 60 MB or smaller.")
+                tmp.write(chunk)
+        if size == 0:
+            raise HTTPException(status_code=400, detail="Choose a non-empty audio file.")
 
-        stage = "creating temporary file"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            tmp_path = tmp.name
-            tmp.write(content)
-
-        stage = "decoding WAV"
+        stage = "decoding audio"
         try:
-            t, data, fs, num_channels = load_wav(tmp_path)
-        except (ValueError, EOFError) as exc:
-            logger.warning("WAV upload rejected during decoding", exc_info=True)
-            raise HTTPException(status_code=400, detail="Could not decode the WAV file. It may be corrupt or use an unsupported encoding; try exporting it as PCM WAV.") from exc
+            if suffix.lower() == ".wav":
+                t, data, fs, num_channels = load_wav(source_path)
+            else:
+                ffmpeg = shutil.which("ffmpeg")
+                if not ffmpeg:
+                    raise HTTPException(status_code=503, detail="Audio decoding is unavailable because FFmpeg is not installed.")
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+                    decoded_path = tmp.name
+                subprocess.run(
+                    [ffmpeg, "-nostdin", "-v", "error", "-y", "-i", source_path,
+                     "-map", "0:a:0", "-vn", "-acodec", "pcm_s16le", decoded_path],
+                    check=True, capture_output=True, timeout=60,
+                )
+                t, data, fs, num_channels = load_wav(decoded_path)
+        except (ValueError, EOFError, OSError, subprocess.SubprocessError) as exc:
+            logger.warning("Audio upload rejected during decoding", exc_info=True)
+            raise HTTPException(status_code=400, detail="Could not decode this audio file. Choose a valid audio file and try again.") from exc
         if fs <= 0 or data.size == 0 or not np.all(np.isfinite(data)):
-            raise HTTPException(status_code=400, detail="The WAV file must contain finite audio samples and a positive sample rate.")
+            raise HTTPException(status_code=400, detail="The audio file must contain valid samples and a positive sample rate.")
 
         stage = "calculating waveform and metadata"
         state.t = t
@@ -307,14 +420,16 @@ async def upload_audio(file: UploadFile = File(...)):
         raise
     except Exception as exc:
         # Keep internal paths and exception details in server logs, not responses.
-        logger.exception("WAV upload failed while %s", stage)
-        raise HTTPException(status_code=500, detail=f"Could not load the WAV file while {stage}. Check the backend logs for details.") from exc
+        logger.exception("Audio upload failed while %s", stage)
+        raise HTTPException(status_code=500, detail=f"Could not load the audio file while {stage}. Check the backend logs for details.") from exc
     finally:
-        if tmp_path is not None:
+        for path in (source_path, decoded_path):
+            if path is None:
+                continue
             try:
-                os.remove(tmp_path)
+                os.remove(path)
             except OSError:
-                logger.warning("Could not remove WAV upload temporary file", exc_info=True)
+                logger.warning("Could not remove audio upload temporary file", exc_info=True)
 
 
 class FilterRequest(BaseModel):
@@ -323,19 +438,24 @@ class FilterRequest(BaseModel):
     high_freq: float = 1100.0
     operation: str = "cut"  # "cut", "keep", "attenuate", "amplify"
     strength: Optional[float] = None
+    target_track: Optional[str] = "original"  # "original" or "processed"
 
 
 @app.post("/api/process/filter")
 def apply_filter(req: FilterRequest):
     """
     Apply frequency-domain band filtering using fourier_filter.py.
+    Can be applied to either the original signal or the currently processed signal.
     """
     if state.signal is None:
         raise HTTPException(status_code=400, detail="No audio loaded")
 
+    # Select base signal according to target_track
+    base_sig = state.processed if (req.target_track == "processed" and state.processed is not None) else state.signal
+
     if not req.enabled:
-        state.freq_processed = np.array(state.signal, copy=True)
-        state.processed = np.array(state.signal, copy=True)
+        state.freq_processed = np.array(base_sig, copy=True)
+        state.processed = np.array(base_sig, copy=True)
         state.last_band = None
         return get_full_state_payload()
 
@@ -347,12 +467,12 @@ def apply_filter(req: FilterRequest):
 
     op = req.operation.lower()
     if op == "keep":
-        state.freq_processed = band_filter(state.signal, state.fs, req.low_freq, req.high_freq, mode="keep")
+        state.freq_processed = band_filter(base_sig, state.fs, req.low_freq, req.high_freq, mode="keep")
     else:
         strength = req.strength
         if strength is None:
             strength = 0.30 if op == "attenuate" else (1.50 if op == "amplify" else 1.0)
-        state.freq_processed = process_band(state.signal, state.fs, req.low_freq, req.high_freq, operation=op, strength=strength)
+        state.freq_processed = process_band(base_sig, state.fs, req.low_freq, req.high_freq, operation=op, strength=strength)
 
     state.processed = np.array(state.freq_processed, copy=True)
     state.last_band = [req.low_freq, req.high_freq]
@@ -369,17 +489,28 @@ class EffectsRequest(BaseModel):
     echo_feedback: float = 55.0     # Echo decay percentage (0-90%)
     echo_taps: int = 3              # Number of echo reflections (1-6)
     echo_mix: float = 65.0          # Wet/dry mix percentage (0-100%)
+    voice_effect: Optional[str] = None # "autotune", "robotic", "baby", "monster"
+    target_track: Optional[str] = "original"  # "original" or "processed"
 
 
 @app.post("/api/process/effects")
 def apply_effects(req: EffectsRequest):
     """
-    Apply time-domain and convolution effects using audio_effects.py.
+    Apply time-domain, voice transformation, and convolution effects using audio_effects.py.
+    Can be applied to either the original signal or the currently processed signal.
     """
-    if state.freq_processed is None:
+    if state.signal is None:
         raise HTTPException(status_code=400, detail="No signal loaded")
 
-    result = np.array(state.freq_processed, copy=True)
+    # Select base signal according to target_track
+    if req.target_track == "processed" and state.processed is not None:
+        base_sig = state.processed
+    elif state.freq_processed is not None:
+        base_sig = state.freq_processed
+    else:
+        base_sig = state.signal
+
+    result = np.array(base_sig, copy=True)
 
     # 1. Amplitude scaling: y[n] = A * x[n]
     if req.gain != 1.0:
@@ -393,7 +524,19 @@ def apply_effects(req: EffectsRequest):
     if abs(req.shift_hz) > 1e-9:
         result = frequency_shift(result, state.fs, req.shift_hz)
 
-    # 4. Convolution echo: y[n] = x[n] * h[n]
+    # 4. Voice transformation effects
+    if req.voice_effect:
+        ve = req.voice_effect.lower()
+        if ve == "autotune":
+            result = autotune_voice_effect(result, state.fs)
+        elif ve == "robotic":
+            result = robotic_voice_effect(result, state.fs)
+        elif ve == "baby":
+            result = baby_voice_effect(result, state.fs)
+        elif ve == "monster":
+            result = monster_voice_effect(result, state.fs)
+
+    # 5. Convolution echo: y[n] = x[n] * h[n]
     if req.echo_enabled:
         feedback = max(0.05, min(0.92, req.echo_feedback / 100.0))
         wet_mix = max(0.05, min(1.0, req.echo_mix / 100.0))
@@ -419,31 +562,36 @@ class FullProcessRequest(BaseModel):
     echo_feedback: float = 55.0
     echo_taps: int = 3
     echo_mix: float = 65.0
+    voice_effect: Optional[str] = None
+    target_track: Optional[str] = "original"  # "original" or "processed"
 
 
 @app.post("/api/process/all")
 def apply_all(req: FullProcessRequest):
     """
     Applies the full DSP pipeline:
-    Fourier Band Filter -> Amplitude Scale -> Time Shift -> Freq Shift -> Convolution Echo
+    Fourier Band Filter -> Amplitude Scale -> Time Shift -> Freq Shift -> Voice Transformation -> Convolution Echo
+    Can start from either the original signal or current processed signal.
     """
     if state.signal is None:
         raise HTTPException(status_code=400, detail="No signal loaded")
+
+    base_sig = state.processed if (req.target_track == "processed" and state.processed is not None) else state.signal
 
     # Step A: Frequency filtering
     if req.filter_enabled:
         op = req.operation.lower()
         if op == "keep":
-            state.freq_processed = band_filter(state.signal, state.fs, req.low_freq, req.high_freq, mode="keep")
+            state.freq_processed = band_filter(base_sig, state.fs, req.low_freq, req.high_freq, mode="keep")
         else:
             strength = req.strength
             if strength is None:
                 strength = 0.30 if op == "attenuate" else (1.50 if op == "amplify" else 1.0)
-            state.freq_processed = process_band(state.signal, state.fs, req.low_freq, req.high_freq, operation=op, strength=strength)
+            state.freq_processed = process_band(base_sig, state.fs, req.low_freq, req.high_freq, operation=op, strength=strength)
         state.last_band = [req.low_freq, req.high_freq]
         state.last_operation = op
     else:
-        state.freq_processed = np.array(state.signal, copy=True)
+        state.freq_processed = np.array(base_sig, copy=True)
         state.last_band = None
 
     # Step B: Audio effects
@@ -456,6 +604,17 @@ def apply_all(req: FullProcessRequest):
 
     if abs(req.shift_hz) > 1e-9:
         result = frequency_shift(result, state.fs, req.shift_hz)
+
+    if req.voice_effect:
+        ve = req.voice_effect.lower()
+        if ve == "autotune":
+            result = autotune_voice_effect(result, state.fs)
+        elif ve == "robotic":
+            result = robotic_voice_effect(result, state.fs)
+        elif ve == "baby":
+            result = baby_voice_effect(result, state.fs)
+        elif ve == "monster":
+            result = monster_voice_effect(result, state.fs)
 
     if req.echo_enabled:
         feedback = max(0.05, min(0.92, req.echo_feedback / 100.0))
