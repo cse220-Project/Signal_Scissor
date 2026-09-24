@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAudioStore } from '../store/useAudioStore';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import InfoBox from '../components/ui/InfoBox';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -61,6 +62,13 @@ export default function Dashboard() {
           Interactive digital audio workstation for discrete Fourier filtering, single-sideband frequency translation, and multi-tap acoustic echo convolution.
         </p>
       </header>
+
+      <InfoBox title="New here? Start in 2 steps" defaultOpen={false}>
+        <p>
+          <strong className="text-ink-primary font-medium">1.</strong> Upload your own audio (drop a file below) or click one of the ready-made signals under "Quick-Load Synthetic Signals".{' '}
+          <strong className="text-ink-primary font-medium">2.</strong> You'll land in the DSP Studio, where you can filter it, add effects, and compare before/after.
+        </p>
+      </InfoBox>
 
       {/* Top Grid: Audio Upload Dropzone & Engine Status */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5">

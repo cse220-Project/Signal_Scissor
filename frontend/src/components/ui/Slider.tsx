@@ -10,6 +10,14 @@ interface SliderProps {
   onChange: (value: number) => void;
   disabled?: boolean;
   className?: string;
+  /** Short plain-language explanation shown as a hover/focus tooltip next to the label. */
+  help?: string;
+  /** Small caption under the track, e.g. a "meaningful range" note relative to Nyquist. */
+  hint?: string;
+}
+
+function formatBound(n: number): string {
+  return Number.isInteger(n) ? n.toLocaleString() : n.toString();
 }
 
 export default function Slider({
@@ -22,6 +30,8 @@ export default function Slider({
   onChange,
   disabled = false,
   className = '',
+  help,
+  hint,
 }: SliderProps) {
   const handleRangeChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange(parseFloat(e.target.value));
@@ -38,7 +48,19 @@ export default function Slider({
   return (
     <div className={`space-y-1.5 ${className}`}>
       <div className="flex items-center justify-between text-[13px]">
-        <span className="font-medium text-ink-secondary">{label}</span>
+        <span className="font-medium text-ink-secondary inline-flex items-center gap-1">
+          {label}
+          {help && (
+            <span
+              title={help}
+              tabIndex={0}
+              className="material-symbols-outlined text-[13px] leading-none text-ink-tertiary hover:text-ink-secondary focus:text-ink-secondary cursor-help outline-none"
+              aria-label={help}
+            >
+              info
+            </span>
+          )}
+        </span>
         <div className="flex items-center gap-1.5 font-mono text-ink-primary font-medium tracking-tight">
           <input
             type="number"
@@ -63,6 +85,11 @@ export default function Slider({
         disabled={disabled}
         className="w-full disabled:opacity-40 disabled:cursor-not-allowed"
       />
+      <div className="flex items-center justify-between text-[10px] font-mono text-ink-tertiary/80">
+        <span>{formatBound(min)}{unit}</span>
+        {hint && <span className="font-sans italic text-ink-tertiary/90 normal-case">{hint}</span>}
+        <span>{formatBound(max)}{unit}</span>
+      </div>
     </div>
   );
 }

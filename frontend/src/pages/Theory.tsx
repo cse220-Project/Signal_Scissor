@@ -555,8 +555,8 @@ export default function Theory() {
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Slider label={<><span className="trademark-signal">SIGNAL</span> Frequency f_sig</>} value={fSig} min={0} max={100000} step={10} unit="Hz" onChange={setFSig} />
-              <Slider label="Sampling Rate f_s" value={fs} min={0} max={100000} step={10} unit="Hz" onChange={setFs} />
+              <Slider label={<><span className="trademark-signal">SIGNAL</span> Frequency f_sig</>} help="The frequency of the continuous signal being sampled." hint="Try 2–200 Hz to see individual cycles clearly" value={fSig} min={0} max={100000} step={10} unit="Hz" onChange={setFSig} />
+              <Slider label="Sampling Rate f_s" help="How many samples per second are taken of the signal." hint="Try 2–200 Hz to see individual cycles clearly" value={fs} min={0} max={100000} step={10} unit="Hz" onChange={setFs} />
             </div>
             <canvas ref={aliasingRef} width={700} height={200} style={cvs} />
             <div className="grid grid-cols-3 gap-3 p-3 bg-secondary/80 rounded-ios-lg font-mono text-[12px]">

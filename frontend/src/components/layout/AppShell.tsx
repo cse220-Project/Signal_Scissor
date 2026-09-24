@@ -45,7 +45,7 @@ export default function AppShell({ children }: AppShellProps) {
           {/* Page content */}
           <main
             id="main-content"
-            className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8 pb-24 lg:pb-10"
+            className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8 pb-40 lg:pb-28"
           >
             {children}
           </main>

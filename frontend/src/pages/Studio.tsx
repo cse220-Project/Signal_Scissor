@@ -8,6 +8,7 @@ import EffectsControls from '../components/studio/EffectsControls';
 import SignalStatsBar from '../components/studio/SignalStatsBar';
 import ImpulseResponseModal from '../components/studio/ImpulseResponseModal';
 import Button from '../components/ui/Button';
+import InfoBox from '../components/ui/InfoBox';
 
 export default function Studio() {
   const {
@@ -58,6 +59,14 @@ export default function Studio() {
           </Button>
         </div>
       </div>
+
+      <InfoBox title="How this page works" defaultOpen={false}>
+        <p>
+          <strong className="text-ink-primary font-medium">1.</strong> Play back the loaded signal below and look at its waveform and spectrum.{' '}
+          <strong className="text-ink-primary font-medium">2.</strong> Adjust the Fourier Filter and/or Effects panels.{' '}
+          <strong className="text-ink-primary font-medium">3.</strong> Click "Apply to Original" or "Apply to Processed" (or "Process Pipeline" to run both at once) to hear and see the result.
+        </p>
+      </InfoBox>
 
       {/* Main player */}
       <TransportBar />

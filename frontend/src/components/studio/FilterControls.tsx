@@ -7,6 +7,9 @@ import Button from '../ui/Button';
 export default function FilterControls() {
   const { filter, setFilter, applyFilterAction, isLoading, signalState } = useAudioStore();
   const nyquist = (signalState?.sample_rate ? signalState.sample_rate / 2 : 4000);
+  const nyquistLabel = `0–${nyquist.toLocaleString()} Hz is the meaningful range for this signal (Nyquist limit)`;
+  const rangeInverted = filter.enabled && filter.low_freq >= filter.high_freq;
+  const bothAboveNyquist = filter.enabled && filter.low_freq > nyquist && filter.high_freq > nyquist;
 
   const operationOptions = [
     { value: 'cut', label: 'Cut (Bandstop / Notch)' },
@@ -43,8 +46,8 @@ export default function FilterControls() {
       </div>
 
       <p className="text-[12px] text-ink-secondary leading-relaxed">
-        Discrete Fourier Transform (DFT) band filtering via{' '}
-        <code className="font-mono text-ink-primary">fourier_filter.py</code>. Modifies spectral bins in frequency domain before Inverse FFT synthesis.
+        Keeps or removes a band of frequencies using a Discrete Fourier Transform (DFT) via{' '}
+        <code className="font-mono text-ink-primary">fourier_filter.py</code>: the signal is converted to the frequency domain, the chosen band is modified, then converted back with an Inverse FFT.
       </p>
 
       {/* Operation selector */}
@@ -55,11 +58,16 @@ export default function FilterControls() {
         onChange={(val: any) => setFilter({ operation: val })}
         disabled={!filter.enabled}
       />
+      <p className="text-[11px] text-ink-tertiary -mt-2.5">
+        Cut = silence this band · Keep = silence everything else · Attenuate/Amplify = turn this band down/up.
+      </p>
 
       {/* Frequency sliders */}
       <div className="space-y-3 pt-1">
         <Slider
           label="Low Cutoff Frequency"
+          help="The lower edge (in Hz) of the frequency band this filter acts on."
+          hint={nyquistLabel}
           value={filter.low_freq}
           min={0}
           max={100000}
@@ -71,6 +79,8 @@ export default function FilterControls() {
 
         <Slider
           label="High Cutoff Frequency"
+          help="The upper edge (in Hz) of the frequency band this filter acts on."
+          hint={nyquistLabel}
           value={filter.high_freq}
           min={0}
           max={100000}
@@ -80,9 +90,19 @@ export default function FilterControls() {
           disabled={!filter.enabled}
         />
 
+        {filter.enabled && (rangeInverted || bothAboveNyquist) && (
+          <p className="flex items-start gap-1.5 text-[11.5px] text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-ios-md px-2.5 py-2 -mt-1">
+            <span className="material-symbols-outlined text-[15px] leading-none mt-px">warning</span>
+            {rangeInverted
+              ? 'Low Cutoff should be less than High Cutoff for this band to make sense.'
+              : `Both cutoffs are above this signal's Nyquist limit (${nyquist.toLocaleString()} Hz) — the filter won't change anything audible.`}
+          </p>
+        )}
+
         {(filter.operation === 'attenuate' || filter.operation === 'amplify') && (
           <Slider
             label="Filter Strength Factor"
+            help="How much to turn the band down (below 1×) or up (above 1×)."
             value={filter.strength ?? (filter.operation === 'attenuate' ? 0.3 : 1.8)}
             min={0.05}
             max={4.0}

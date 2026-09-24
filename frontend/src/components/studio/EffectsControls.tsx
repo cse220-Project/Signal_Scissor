@@ -25,7 +25,7 @@ export default function EffectsControls() {
       </div>
 
       <p className="text-[12px] text-ink-secondary leading-relaxed">
-        Time-domain operations and linear time-invariant system convolution via{' '}
+        Time-domain operations and linear time-invariant (LTI) system convolution via{' '}
         <code className="font-mono text-ink-primary">audio_effects.py</code>: amplitude scaling, delay, SSB frequency translation, and multi-tap echo convolution.
       </p>
 
@@ -66,6 +66,7 @@ export default function EffectsControls() {
       <div className="space-y-3 pt-1">
         <Slider
           label="Amplitude Gain (Volume Scaling)"
+          help="Multiplies the signal's amplitude. 1× = unchanged, below 1× = quieter, above 1× = louder."
           value={effects.gain}
           min={0.1}
           max={2.5}
@@ -76,6 +77,7 @@ export default function EffectsControls() {
 
         <Slider
           label="Discrete Time Delay (Shifting)"
+          help="Shifts the whole signal later in time by this many milliseconds."
           value={effects.delay_ms}
           min={0}
           max={600}
@@ -86,6 +88,7 @@ export default function EffectsControls() {
 
         <Slider
           label="Frequency Shift (Hilbert SSB)"
+          help="Single-sideband modulation: moves every frequency component up by this amount using a Hilbert transform, instead of just pitching the whole signal up/down."
           value={effects.shift_hz}
           min={0}
           max={100000}
@@ -113,6 +116,7 @@ export default function EffectsControls() {
           <div className="space-y-3 pt-1">
             <Slider
               label="Reflection Delay Spacing (n₀)"
+              help="Time gap between each echo repeat, like the delay between a shout and hearing it bounce back."
               value={effects.echo_delay_ms}
               min={20}
               max={600}
@@ -123,6 +127,7 @@ export default function EffectsControls() {
 
             <Slider
               label="Decay Factor (Feedback α)"
+              help="How quickly each successive echo repeat fades out. Higher = echoes last longer."
               value={effects.echo_feedback}
               min={10}
               max={85}
@@ -133,6 +138,7 @@ export default function EffectsControls() {
 
             <Slider
               label="Number of Echo Taps"
+              help="How many discrete echo repeats (impulse response taps) are added."
               value={effects.echo_taps}
               min={1}
               max={6}
@@ -143,6 +149,7 @@ export default function EffectsControls() {
 
             <Slider
               label="Wet / Dry Reflection Mix"
+              help="Balance between the original (dry) signal and the added echoes (wet). Higher = more echo."
               value={effects.echo_mix}
               min={10}
               max={100}

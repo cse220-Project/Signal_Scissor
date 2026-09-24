@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import ImpulseResponseModal from '../components/studio/ImpulseResponseModal';
 import FilterControls from '../components/studio/FilterControls';
 import EffectsControls from '../components/studio/EffectsControls';
+import InfoBox from '../components/ui/InfoBox';
 
 export default function Effects() {
   const navigate = useNavigate();
@@ -49,6 +50,14 @@ export default function Effects() {
         </Button>
       </div>
 
+      <InfoBox title="How this page works" defaultOpen={false}>
+        <p>
+          Pick a ready-made real-world scenario below (e.g. "Telephone bandwidth"), or switch to{' '}
+          <strong className="text-ink-primary font-medium">Manual DSP Controls Rack</strong> to set exact filter/effect values yourself.
+          Each preset card applies straight to either the Original or Processed track — pick "Default Target" below to pre-select which one is highlighted.
+        </p>
+      </InfoBox>
+
       {/* Mode Switcher Tabs */}
       <div className="page-tabs">
         <button
@@ -79,19 +88,22 @@ export default function Effects() {
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-secondary/70 rounded-ios-xl border border-border">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[12px] font-medium text-ink-secondary mr-1">Category:</span>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`text-[12px] px-3 py-1 rounded-pill transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-primary text-primary-foreground font-semibold'
-                      : 'bg-surface text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+              {categories.map((cat) => {
+                const count = cat === 'All' ? REAL_LIFE_PRESETS.length : REAL_LIFE_PRESETS.filter((p) => p.category === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`text-[12px] px-3 py-1 rounded-pill transition-all ${
+                      selectedCategory === cat
+                        ? 'bg-primary text-primary-foreground font-semibold'
+                        : 'bg-surface text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
+                    }`}
+                  >
+                    {cat} <span className="opacity-70">({count})</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex items-center gap-2 text-[12px]">
@@ -181,7 +193,7 @@ export default function Effects() {
                     </span>
                     <div className="flex items-center gap-1.5">
                       <Button
-                        variant="secondary"
+                        variant={isActive || targetTrack === 'original' ? 'primary' : 'secondary'}
                         size="sm"
                         icon="graphic_eq"
                         loading={isLoading && isActive}
@@ -191,7 +203,7 @@ export default function Effects() {
                         On Original
                       </Button>
                       <Button
-                        variant={isActive ? 'primary' : 'secondary'}
+                        variant={isActive || targetTrack === 'processed' ? 'primary' : 'secondary'}
                         size="sm"
                         icon="auto_fix_high"
                         loading={isLoading && isActive}
@@ -208,10 +220,16 @@ export default function Effects() {
           </div>
         </div>
       ) : (
-        /* Manual DSP Controls Rack */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FilterControls />
-          <EffectsControls />
+        /* Manual DSP Controls Rack — same controls as the Studio page, for tuning by hand instead of via a preset */
+        <div className="space-y-4">
+          <p className="text-[12px] text-ink-tertiary">
+            These are the same Filter &amp; Effects controls available in{' '}
+            <span className="font-medium text-ink-secondary">DSP Studio</span> — use them here to fine-tune a preset, or build a custom chain from scratch.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FilterControls />
+            <EffectsControls />
+          </div>
         </div>
       )}
 

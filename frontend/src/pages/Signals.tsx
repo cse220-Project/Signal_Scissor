@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import Slider from '../components/ui/Slider';
 import WaveformCanvas from '../components/visualization/WaveformCanvas';
 import SpectrumCanvas from '../components/visualization/SpectrumCanvas';
+import InfoBox from '../components/ui/InfoBox';
 
 export default function Signals() {
   const navigate = useNavigate();
@@ -91,6 +92,13 @@ export default function Signals() {
         </Button>
       </div>
 
+      <InfoBox title="Three ways to get a signal" defaultOpen={false}>
+        <p>
+          Dial in a custom tone with the synthesizer, pick a ready-made lab preset, or record your own voice with the microphone.
+          Whichever you choose, it becomes the "Active Signal" previewed on the right — click "Open in Studio" when you're ready to process it.
+        </p>
+      </InfoBox>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left Column: All Input Sources (Sine Synthesizer, Presets, Mic) */}
         <div className="lg:col-span-5 space-y-4">
@@ -104,6 +112,8 @@ export default function Signals() {
             <div className="grid grid-cols-1 gap-4">
               <Slider
                 label="Carrier Frequency (f₀)"
+                help="The pitch of the generated pure tone. Typical human hearing spans about 20 Hz to 20,000 Hz."
+                hint="Audible range: ~20 Hz – 20,000 Hz"
                 value={customFreq}
                 min={0}
                 max={100000}
@@ -114,6 +124,7 @@ export default function Signals() {
 
               <Slider
                 label="Duration"
+                help="How long the generated tone lasts, in seconds."
                 value={customDuration}
                 min={0.5}
                 max={60}

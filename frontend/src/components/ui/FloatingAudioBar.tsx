@@ -37,7 +37,7 @@ export default function FloatingAudioBar() {
   return (
     <div
       id="floating-audio-bar"
-      className="fixed bottom-0 left-0 right-0 z-50 lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 lg:w-[700px] lg:rounded-2xl select-none animate-in slide-in-from-bottom duration-500"
+      className="fixed bottom-[4.75rem] left-0 right-0 z-50 lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 lg:w-[700px] lg:rounded-2xl select-none animate-in slide-in-from-bottom duration-500"
       style={{
         background: 'rgba(10, 15, 30, 0.88)',
         backdropFilter: 'blur(28px) saturate(180%)',

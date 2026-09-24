@@ -46,7 +46,9 @@ export default function TransportBar() {
 
   const formatTime = (sec: number) => {
     const s = Math.max(0, sec);
-    return `${s.toFixed(2)}s`;
+    const m = Math.floor(s / 60);
+    const rem = s - m * 60;
+    return `${m}:${rem.toFixed(1).padStart(4, '0')}`;
   };
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +90,7 @@ export default function TransportBar() {
           </span>
 
           {/* VU Meter bar */}
-          <div className="flex items-center gap-1.5" title="Signal Peak / RMS Level">
+          <div className="flex items-center gap-1.5" title="Signal level (peak/RMS) of the currently playing track">
             <span className="text-[11px] font-medium uppercase tracking-wider text-ink-tertiary">VU</span>
             <div className="w-16 h-2.5 bg-surface-raised rounded-pill overflow-hidden flex">
               <div
@@ -98,6 +100,9 @@ export default function TransportBar() {
                 style={{ width: `${Math.min(100, vuLevel * 100)}%` }}
               />
             </div>
+            <span className="text-[11px] font-mono text-ink-tertiary w-8">
+              {Math.round(Math.min(100, vuLevel * 100))}%
+            </span>
           </div>
         </div>
 
@@ -200,8 +205,12 @@ export default function TransportBar() {
             value={volume}
             onChange={(e) => setVolume(parseFloat(e.target.value))}
             className="w-full"
+            aria-label="Volume"
             title={`Volume: ${Math.round(volume * 100)}%`}
           />
+          <span className="text-[11px] font-mono text-ink-tertiary w-9 text-right shrink-0">
+            {Math.round(volume * 100)}%
+          </span>
         </div>
       </div>
     </div>

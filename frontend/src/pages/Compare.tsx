@@ -286,7 +286,7 @@ export default function Compare() {
       </Card>
 
       {/* ========================================================================= */}
-      {/* 3 & 4. WAVEFORM & SPECTROGRAM COMPARISON                                  */}
+      {/* 3 & 4. WAVEFORM COMPARISON & ACTIVE FILTER STATUS                         */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Time-Domain Waveform Overlay */}
@@ -327,7 +327,7 @@ export default function Compare() {
           <div className="flex items-center gap-2 border-b border-border pb-2.5">
             <span className="material-symbols-outlined text-primary text-[20px]">settings_input_component</span>
             <h3 className="text-[15px] font-bold text-foreground">
-              6. Active Filter & Frequency Operation
+              4. Active Filter & Frequency Operation
             </h3>
           </div>
 
@@ -372,7 +372,7 @@ export default function Compare() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. SPECTROGRAM COMPARISON (STFT HEATMAPS)                                 */}
+      {/* 5. SPECTROGRAM COMPARISON (STFT HEATMAPS)                                 */}
       {/* ========================================================================= */}
       <Card variant="surface" className="space-y-4 p-5">
         <div className="flex items-center justify-between border-b border-border pb-3">
@@ -382,7 +382,7 @@ export default function Compare() {
             </div>
             <div>
               <h2 className="text-[17px] font-bold text-foreground">
-                4. STFT Spectrogram Comparison (Time vs Frequency Intensity)
+                5. STFT Spectrogram Comparison (Time vs Frequency Intensity)
               </h2>
               <p className="text-[12px] text-muted-foreground">
                 Visualizes <span className="font-semibold text-foreground">when specific frequencies occur over time</span>. Highlights frequency attenuation or reverb tails.
@@ -410,14 +410,14 @@ export default function Compare() {
       </Card>
 
       {/* ========================================================================= */}
-      {/* 5 & 7. PROCESSING SUMMARY METRICS & HIGHLIGHTED INSIGHTS                  */}
+      {/* 6 & 7. PROCESSING SUMMARY METRICS & HIGHLIGHTED INSIGHTS                  */}
       {/* ========================================================================= */}
       <Card variant="surface" className="space-y-5 p-5">
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-[22px]">format_list_bulleted</span>
             <h2 className="text-[17px] font-bold text-foreground">
-              5. Calculated Quantitative <span className="trademark-signal">SIGNAL</span> Metrics
+              6. Calculated Quantitative <span className="trademark-signal">SIGNAL</span> Metrics
             </h2>
           </div>
           <span className="text-[11px] font-mono text-muted-foreground">Exact calculated audio values</span>
