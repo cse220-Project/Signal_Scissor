@@ -6,15 +6,13 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import ImpulseResponseModal from '../components/studio/ImpulseResponseModal';
-import FilterControls from '../components/studio/FilterControls';
-import EffectsControls from '../components/studio/EffectsControls';
 import InfoBox from '../components/ui/InfoBox';
+import SignalStatusBar from '../components/ui/SignalStatusBar';
 
 export default function Effects() {
   const navigate = useNavigate();
   const { applyRealLifePreset, activeRealLifePreset, isLoading } = useAudioStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [activeTab, setActiveTab] = useState<'real-life' | 'manual'>('real-life');
   const [targetTrack, setTargetTrack] = useState<'original' | 'processed'>('original');
 
   const categories = ['All', 'Telecommunications', 'Audio Engineering', 'Acoustics', 'Biomedical / Audiology'];
@@ -50,40 +48,24 @@ export default function Effects() {
         </Button>
       </div>
 
+      <SignalStatusBar />
+
       <InfoBox title="How this page works" defaultOpen={false}>
         <p>
-          Pick a ready-made real-world scenario below (e.g. "Telephone bandwidth"), or switch to{' '}
-          <strong className="text-ink-primary font-medium">Manual DSP Controls Rack</strong> to set exact filter/effect values yourself.
-          Each preset card applies straight to either the Original or Processed track — pick "Default Target" below to pre-select which one is highlighted.
+          Pick a ready-made real-world scenario below (e.g. "Telephone bandwidth") and apply it straight to the Original or Processed track.
+          Need exact filter/effect values instead of a preset? Use <strong className="text-ink-primary font-medium">View in Studio</strong> above —
+          the same Filter &amp; Effects panels used here live there for manual tuning, so there's one place for hands-on control.
+          Pick "Default Target" below to pre-select which button is highlighted per card.
         </p>
       </InfoBox>
 
-      {/* Mode Switcher Tabs */}
-      <div className="page-tabs">
-        <button
-          onClick={() => setActiveTab('real-life')}
-          className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors ${
-            activeTab === 'real-life'
-              ? 'bg-primary text-primary-foreground font-semibold'
-              : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
-          }`}
-        >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[15px] font-semibold text-ink-primary">
           Real-Life Application Presets ({REAL_LIFE_PRESETS.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('manual')}
-          className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors ${
-            activeTab === 'manual'
-              ? 'bg-primary text-primary-foreground font-semibold'
-              : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
-          }`}
-        >
-          Manual DSP Controls Rack
-        </button>
+        </h2>
       </div>
 
-      {activeTab === 'real-life' ? (
-        <div className="space-y-4">
+      <div className="space-y-4">
           {/* Category & Target Audio Track Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-secondary/70 rounded-ios-xl border border-border">
             <div className="flex flex-wrap items-center gap-2">
@@ -218,20 +200,7 @@ export default function Effects() {
               );
             })}
           </div>
-        </div>
-      ) : (
-        /* Manual DSP Controls Rack — same controls as the Studio page, for tuning by hand instead of via a preset */
-        <div className="space-y-4">
-          <p className="text-[12px] text-ink-tertiary">
-            These are the same Filter &amp; Effects controls available in{' '}
-            <span className="font-medium text-ink-secondary">DSP Studio</span> — use them here to fine-tune a preset, or build a custom chain from scratch.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FilterControls />
-            <EffectsControls />
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Impulse Response Modal */}
       <ImpulseResponseModal />

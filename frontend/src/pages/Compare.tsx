@@ -14,6 +14,7 @@ export default function Compare() {
 
   const [isLogScale, setIsLogScale] = useState(true);
   const [spectrumViewMode, setSpectrumViewMode] = useState<'both' | 'original' | 'processed'>('both');
+  const [spectrogramRangeDb, setSpectrogramRangeDb] = useState(80);
 
   const procStats = signalState?.stats;
   const origStats = signalState?.original_stats || procStats;
@@ -311,6 +312,7 @@ export default function Compare() {
             activeTrack={activeTrack}
             height={170}
             onSeek={seekTo}
+            showHoverReadout
           />
 
           <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-1">
@@ -389,6 +391,21 @@ export default function Compare() {
               </p>
             </div>
           </div>
+
+          <div className="flex items-center gap-1 bg-secondary p-1 rounded-ios-lg border border-border">
+            <span className="text-[10px] text-muted-foreground px-1.5">dB range:</span>
+            {[40, 60, 80, 100].map((db) => (
+              <button
+                key={db}
+                onClick={() => setSpectrogramRangeDb(db)}
+                className={`px-2 py-1 rounded-ios-md text-[11px] font-medium transition-all ${
+                  spectrogramRangeDb === db ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {db}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -398,6 +415,7 @@ export default function Compare() {
             subtitle="Before Processing"
             colorScheme="cyan-emerald"
             height={180}
+            dynamicRangeDb={spectrogramRangeDb}
           />
           <SpectrogramCanvas
             spectrogram={signalState?.processed_spectrogram}
@@ -405,6 +423,7 @@ export default function Compare() {
             subtitle="After Processing"
             colorScheme="cyan-emerald"
             height={180}
+            dynamicRangeDb={spectrogramRangeDb}
           />
         </div>
       </Card>

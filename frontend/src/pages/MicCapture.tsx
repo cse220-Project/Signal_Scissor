@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { useAudioStore } from '../store/useAudioStore';
-import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import WaveformCanvas from '../components/visualization/WaveformCanvas';
@@ -8,8 +7,7 @@ import SpectrumCanvas from '../components/visualization/SpectrumCanvas';
 
 export default function MicCapture() {
   const navigate = useNavigate();
-  const { signalState, duration, currentTime, activeTrack, isLoading } = useAudioStore();
-  const { isRecording, recordDuration, recordError, startRecording, stopRecording } = useAudioRecorder();
+  const { signalState, duration, currentTime, activeTrack } = useAudioStore();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -47,54 +45,26 @@ export default function MicCapture() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
         {/* Recording Control Console */}
         <div className="md:col-span-5 space-y-4">
-          <Card variant="pastel-green" className="space-y-4">
+          <Card variant="pastel-green" className="space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-hairline">
               <span className="material-symbols-outlined text-[20px] text-ink-primary">mic</span>
-              <h3 className="text-[15px] font-semibold text-ink-primary">Microphone Recording Studio</h3>
+              <h3 className="text-[15px] font-semibold text-ink-primary">Record From Microphone</h3>
             </div>
 
             <p className="text-[12px] text-ink-secondary leading-relaxed">
-              Click start to capture acoustic signals. When stopped, your recording is automatically encoded into 16-bit PCM WAV and stored as your active DSP signal.
+              Recording now happens from <strong className="text-ink-primary font-medium">Control Center</strong>, where you can set a max duration,
+              listen back before committing, and re-record if needed — then it lands here automatically as your active signal.
             </p>
 
-            <div className="bg-surface-raised rounded-ios-xl p-5 text-center space-y-4 shadow-sm">
-              <div className="flex items-center justify-center gap-3">
-                <span
-                  className={`w-3.5 h-3.5 rounded-full transition-all ${
-                    isRecording ? 'bg-error animate-ping' : 'bg-ink-tertiary'
-                  }`}
-                />
-                <span className="font-mono text-[18px] font-bold text-ink-primary tracking-wider">
-                  {isRecording ? `${recordDuration.toFixed(1)}s` : '0.0s'}
-                </span>
-              </div>
-
-              <div className="text-[12px] font-medium text-ink-secondary">
-                {isRecording ? (
-                  <span className="text-error font-semibold animate-pulse">
-                    Recording acoustic stream...
-                  </span>
-                ) : (
-                  <span>Ready to capture microphone stream</span>
-                )}
-              </div>
-
-              {recordError && (
-                <div className="bg-error/10 text-error p-2.5 rounded-ios-lg text-[11px]">
-                  {recordError}
-                </div>
-              )}
-
-              <Button
-                variant={isRecording ? 'destructive' : 'primary'}
-                size="lg"
-                className="w-full justify-center"
-                icon={isRecording ? 'stop' : 'mic'}
-                onClick={isRecording ? stopRecording : startRecording}
-              >
-                {isRecording ? 'Stop & Load Recording' : 'Start Recording'}
-              </Button>
-            </div>
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full justify-center"
+              icon="mic"
+              onClick={() => navigate('/')}
+            >
+              Record in Control Center
+            </Button>
           </Card>
 
           {/* Quick Info */}

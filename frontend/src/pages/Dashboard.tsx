@@ -1,15 +1,39 @@
 import { useState, useRef, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAudioStore } from '../store/useAudioStore';
+import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import Slider from '../components/ui/Slider';
 import InfoBox from '../components/ui/InfoBox';
+import SignalStatusBar from '../components/ui/SignalStatusBar';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { loadPreset, uploadFile, signalState, isLoading, error } = useAudioStore();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [sourceTab, setSourceTab] = useState<'browse' | 'record'>('browse');
+  const [recordMaxDuration, setRecordMaxDuration] = useState(5);
+  const {
+    isRecording,
+    recordDuration,
+    recordError,
+    previewUrl,
+    hasPreview,
+    startRecording,
+    stopRecording,
+    confirmRecording,
+    discardRecording,
+    downloadRecording,
+  } = useAudioRecorder({ maxDurationSec: recordMaxDuration, autoUpload: false });
+
+  const handleUseRecording = async () => {
+    const success = await confirmRecording();
+    if (success) {
+      navigate('/studio');
+    }
+  };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -70,43 +94,167 @@ export default function Dashboard() {
         </p>
       </InfoBox>
 
+      <SignalStatusBar />
+
       {/* Top Grid: Audio Upload Dropzone & Engine Status */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
         {/* Upload Zone */}
-        <div className="md:col-span-8">
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`min-h-[240px] rounded-ios-2xl border border-hairline p-6 md:p-8 transition-all text-center flex flex-col items-center justify-center cursor-pointer select-none ${
-              isDragging ? 'bg-accent scale-[1.01] border-primary/40' : 'bg-surface hover:bg-accent hover:border-primary/30'
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center mb-3.5">
-              <span className="material-symbols-outlined text-[24px] text-ink-primary">
-                cloud_upload
-              </span>
-            </div>
-            <h3 className="text-[16px] font-semibold text-ink-primary mb-1">
-              Drop an Audio File Here
-            </h3>
-            <p className="text-[13px] text-ink-secondary max-w-xs mb-4">
-              Any audio format · up to 60 MB
-            </p>
-            <Button variant="secondary" size="sm" icon="folder_open">
-              Browse Files
-            </Button>
+        <div className="md:col-span-8 space-y-3">
+          <div className="page-tabs">
+            <button
+              type="button"
+              onClick={() => setSourceTab('browse')}
+              className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors inline-flex items-center gap-1.5 ${
+                sourceTab === 'browse'
+                  ? 'bg-primary text-primary-foreground font-semibold'
+                  : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">folder_open</span>
+              Browse File
+            </button>
+            <button
+              type="button"
+              onClick={() => setSourceTab('record')}
+              className={`px-4 py-2 rounded-ios-lg text-[14px] font-medium transition-colors inline-flex items-center gap-1.5 ${
+                sourceTab === 'record'
+                  ? 'bg-primary text-primary-foreground font-semibold'
+                  : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-raised'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">mic</span>
+              Record Audio
+            </button>
           </div>
-          {error && (
-            <p className="text-center text-error mt-2.5 text-[12px] font-medium">{error}</p>
+
+          {sourceTab === 'browse' ? (
+            <div>
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`min-h-[240px] rounded-ios-2xl border border-hairline p-6 md:p-8 transition-all text-center flex flex-col items-center justify-center cursor-pointer select-none ${
+                  isDragging ? 'bg-accent scale-[1.01] border-primary/40' : 'bg-surface hover:bg-accent hover:border-primary/30'
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center mb-3.5">
+                  <span className="material-symbols-outlined text-[24px] text-ink-primary">
+                    cloud_upload
+                  </span>
+                </div>
+                <h3 className="text-[16px] font-semibold text-ink-primary mb-1">
+                  Drop an Audio File Here
+                </h3>
+                <p className="text-[13px] text-ink-secondary max-w-xs mb-4">
+                  Any audio format · up to 60 MB
+                </p>
+                <Button variant="secondary" size="sm" icon="folder_open">
+                  Browse Files
+                </Button>
+              </div>
+              {error && (
+                <p className="text-center text-error mt-2.5 text-[12px] font-medium">{error}</p>
+              )}
+            </div>
+          ) : (
+            <div className="min-h-[240px] rounded-ios-2xl border border-hairline p-6 md:p-8 bg-surface flex flex-col justify-center">
+              {!hasPreview ? (
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center">
+                      <span
+                        className={`material-symbols-outlined text-[24px] ${
+                          isRecording ? 'text-error animate-pulse' : 'text-ink-primary'
+                        }`}
+                      >
+                        mic
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] font-semibold text-ink-primary mb-1">
+                        {isRecording
+                          ? `Recording… ${recordDuration.toFixed(1)}s / ${recordMaxDuration}s`
+                          : 'Record From Microphone'}
+                      </h3>
+                      <p className="text-[13px] text-ink-secondary max-w-xs mx-auto">
+                        {isRecording
+                          ? 'Speak or make sound near your microphone.'
+                          : 'Capture live audio and send it into the same DSP pipeline as an uploaded file.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="max-w-xs mx-auto">
+                    <Slider
+                      label="Max Recording Duration"
+                      help="Recording stops automatically at this length. You can also click Stop earlier at any time."
+                      value={recordMaxDuration}
+                      min={1}
+                      max={60}
+                      step={1}
+                      unit="s"
+                      onChange={setRecordMaxDuration}
+                      disabled={isRecording}
+                    />
+                  </div>
+
+                  {recordError && (
+                    <p className="text-center text-error text-[12px] font-medium max-w-sm mx-auto">
+                      {recordError}
+                    </p>
+                  )}
+
+                  <div className="flex justify-center">
+                    <Button
+                      variant={isRecording ? 'destructive' : 'primary'}
+                      size="md"
+                      icon={isRecording ? 'stop' : 'mic'}
+                      onClick={isRecording ? stopRecording : startRecording}
+                    >
+                      {isRecording ? 'Stop Recording' : 'Start Recording'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-success">check_circle</span>
+                    <h3 className="text-[15px] font-semibold text-ink-primary">
+                      Recording ready — listen back before using it
+                    </h3>
+                  </div>
+                  <audio controls src={previewUrl ?? undefined} className="w-full" />
+                  {recordError && (
+                    <p className="text-error text-[12px] font-medium">{recordError}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    <Button variant="secondary" size="sm" icon="download" onClick={() => downloadRecording()}>
+                      Download WAV
+                    </Button>
+                    <Button variant="secondary" size="sm" icon="refresh" onClick={discardRecording}>
+                      Re-record
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon="check"
+                      loading={isLoading}
+                      onClick={handleUseRecording}
+                    >
+                      Use This Recording
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

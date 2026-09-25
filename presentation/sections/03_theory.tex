@@ -1,0 +1,33 @@
+% Slide 3 -- Theory (presenter: Safwan, ~30s)
+\begin{frame}{Theory in Action}
+  \small
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.55\textwidth}
+      \textbf{DFT / FFT band filter}
+      \[
+        X[k] = \sum_{n=0}^{N-1} x[n]\, e^{-j2\pi kn/N}
+      \]
+      \vspace{-0.15cm}
+      \textbf{LTI convolution echo}
+      \[
+        y[n] = x[n] * h[n]
+      \]
+      \vspace{-0.15cm}
+      \textbf{Amplitude scale \& time shift}
+      \[
+        y[n] = A\,x[n], \qquad y[n] = x[n - n_0]
+      \]
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{itemize}
+        \item FFT $\rightarrow$ mask band $\rightarrow$ IFFT
+        \item Cut / Keep / Attenuate / Amplify
+        \item $h[n]$: decaying spaced impulses
+        \item Analytic signal (Hilbert-style) $\rightarrow$ SSB freq.\ shift
+        \item STFT $\rightarrow$ time--frequency spectrogram
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.25cm}
+  \srcnote{fourier\_filter.py $\cdot$ audio\_effects.py $\cdot$ server.py (frequency\_shift\_channel, compute\_spectrogram\_payload)}
+\end{frame}

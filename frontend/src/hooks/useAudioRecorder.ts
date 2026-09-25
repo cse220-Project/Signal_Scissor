@@ -35,15 +35,53 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
-export function useAudioRecorder() {
+function friendlyRecordingError(err: unknown): string {
+  if (err instanceof DOMException) {
+    switch (err.name) {
+      case 'NotFoundError':
+      case 'DevicesNotFoundError':
+        return 'No microphone was found on this device. Connect one and try again.';
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+        return 'Microphone access was denied. Allow microphone permission for this site in your browser settings, then try again.';
+      case 'NotReadableError':
+      case 'TrackStartError':
+        return 'Your microphone is busy or unavailable. Close other apps that might be using it and try again.';
+      case 'OverconstrainedError':
+        return 'No microphone matches the requested audio settings.';
+      case 'SecurityError':
+        return 'Microphone access is blocked here. Try loading the app over HTTPS or localhost.';
+    }
+  }
+  return err instanceof Error ? err.message : 'Failed to record or process audio.';
+}
+
+interface UseAudioRecorderOptions {
+  /** Auto-stop the recording once it reaches this many seconds. Undefined = no cap (manual stop only). */
+  maxDurationSec?: number;
+  /**
+   * When true (default, matches original behavior), the recording is encoded and
+   * uploaded into the DSP pipeline automatically as soon as it stops.
+   * When false, the recording is held locally as a preview (playable via `previewUrl`)
+   * until `confirmRecording()` is called, so the caller can offer a listen-back /
+   * re-record step before committing it.
+   */
+  autoUpload?: boolean;
+}
+
+export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
+  const { maxDurationSec, autoUpload = true } = options;
+
   const [isRecording, setIsRecording] = useState(false);
   const [recordDuration, setRecordDuration] = useState(0);
   const [recordError, setRecordError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const pendingBlobRef = useRef<Blob | null>(null);
 
   const { uploadFile } = useAudioStore();
 
@@ -57,8 +95,28 @@ export function useAudioRecorder() {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return prev;
+      });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const uploadPending = useCallback(async (): Promise<boolean> => {
+    const blob = pendingBlobRef.current;
+    if (!blob) return false;
+    const file = new File([blob], `mic_recording_${Date.now()}.wav`, { type: 'audio/wav' });
+    const success = await uploadFile(file);
+    if (success) {
+      pendingBlobRef.current = null;
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    }
+    return success;
+  }, [uploadFile]);
 
   const startRecording = useCallback(async () => {
     setRecordError(null);
@@ -94,13 +152,20 @@ export function useAudioRecorder() {
           }
 
           const wavBlob = encodeWav(mono, decoded.sampleRate);
-          const file = new File([wavBlob], `mic_recording_${Date.now()}.wav`, { type: 'audio/wav' });
-
-          await uploadFile(file);
           if (decodeCtx.state !== 'closed') void decodeCtx.close();
+
+          pendingBlobRef.current = wavBlob;
+          const url = URL.createObjectURL(wavBlob);
+          setPreviewUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return url;
+          });
+
+          if (autoUpload) {
+            await uploadPending();
+          }
         } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Failed to process recorded audio';
-          setRecordError(message);
+          setRecordError(friendlyRecordingError(err));
         } finally {
           if (streamRef.current) {
             streamRef.current.getTracks().forEach((track) => track.stop());
@@ -116,14 +181,22 @@ export function useAudioRecorder() {
 
       const startTime = Date.now();
       timerRef.current = window.setInterval(() => {
-        setRecordDuration((Date.now() - startTime) / 1000);
+        const elapsed = (Date.now() - startTime) / 1000;
+        setRecordDuration(elapsed);
+        if (maxDurationSec && elapsed >= maxDurationSec) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          mediaRecorder.stop();
+          setIsRecording(false);
+        }
       }, 100);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Microphone access denied or unavailable';
-      setRecordError(message);
+      setRecordError(friendlyRecordingError(err));
       setIsRecording(false);
     }
-  }, [uploadFile]);
+  }, [autoUpload, maxDurationSec, uploadPending]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -136,11 +209,41 @@ export function useAudioRecorder() {
     }
   }, [isRecording]);
 
+  const confirmRecording = useCallback((): Promise<boolean> => uploadPending(), [uploadPending]);
+
+  const discardRecording = useCallback(() => {
+    pendingBlobRef.current = null;
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setRecordDuration(0);
+    setRecordError(null);
+  }, []);
+
+  const downloadRecording = useCallback((filename?: string) => {
+    const blob = pendingBlobRef.current;
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || `recording_${Date.now()}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, []);
+
   return {
     isRecording,
     recordDuration,
     recordError,
+    previewUrl,
+    hasPreview: !!previewUrl,
     startRecording,
     stopRecording,
+    confirmRecording,
+    discardRecording,
+    downloadRecording,
   };
 }

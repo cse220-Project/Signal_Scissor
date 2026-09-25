@@ -1,4 +1,4 @@
-import { useEffect, useRef, MouseEvent } from 'react';
+import { useEffect, useRef, useState, MouseEvent } from 'react';
 import { WaveformPayload } from '../../types';
 
 interface WaveformCanvasProps {
@@ -15,6 +15,10 @@ interface WaveformCanvasProps {
   customOrigColor?: string;
   customProcColor?: string;
   showPlayhead?: boolean;
+  /** 'detail' (default) shows the short high-resolution preview window; 'overview' shows the full duration at lower resolution. Both come from data the backend already computes. */
+  zoomMode?: 'overview' | 'detail';
+  /** Shows a small time/amplitude readout on hover. */
+  showHoverReadout?: boolean;
 }
 
 export default function WaveformCanvas({
@@ -31,8 +35,18 @@ export default function WaveformCanvas({
   customOrigColor,
   customProcColor,
   showPlayhead = true,
+  zoomMode = 'detail',
+  showHoverReadout = false,
 }: WaveformCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [hoverInfo, setHoverInfo] = useState<{ x: number; time: number; origVal: number | null; procVal: number | null } | null>(null);
+
+  const preferredWaveform = activeTrack === 'original' ? originalWaveform : processedWaveform;
+  const previewDuration = preferredWaveform?.preview?.duration || 0;
+  const previewStart = preferredWaveform?.preview?.start_time || 0;
+  const useDetail = zoomMode === 'detail' && previewDuration > 0;
+  const displayDuration = useDetail ? previewDuration : duration;
+  const displayStart = useDetail ? previewStart : 0;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,12 +65,6 @@ export default function WaveformCanvas({
 
     const width = rect.width;
     const centerY = height / 2;
-    // Long recordings are delivered with a short, frequency-aware preview.
-    // Use it for drawing so a pure sine does not collapse into a solid block.
-    const preferredWaveform = activeTrack === 'original' ? originalWaveform : processedWaveform;
-    const previewDuration = preferredWaveform?.preview?.duration || 0;
-    const previewStart = preferredWaveform?.preview?.start_time || 0;
-    const displayDuration = previewDuration || duration;
 
     // Clear background
     ctx.clearRect(0, 0, width, height);
@@ -82,12 +90,12 @@ export default function WaveformCanvas({
     ctx.textAlign = 'center';
     for (let i = 0; i <= numTicks; i++) {
       const x = (i / numTicks) * width;
-      const t = previewStart + (i / numTicks) * (displayDuration || 2.0);
+      const t = displayStart + (i / numTicks) * (displayDuration || 2.0);
       ctx.fillRect(x, height - 8, 1, 4);
       if (i > 0 && i < numTicks) {
         const label = t < 0.001 ? `${(t * 1e6).toFixed(0)}µs`
           : t < 1 ? `${(t * 1e3).toFixed(1)}ms`
-          : t >= 60 ? `${(t / 60).toFixed(1)}m` : `${t.toFixed(1)}s`;
+          : t >= 60 ? `${(t / 60).toFixed(1)}m` : `${t.toFixed(2)}s`;
         ctx.fillText(label, x, height - 12);
       }
     }
@@ -152,7 +160,7 @@ export default function WaveformCanvas({
     if (showOriginal && originalWaveform?.peaks && originalWaveform.peaks.length > 0) {
       const isOrigActive = activeTrack === 'original';
       drawEnvelope(
-        originalWaveform.preview?.peaks || originalWaveform.peaks,
+        useDetail ? (originalWaveform.preview?.peaks || originalWaveform.peaks) : originalWaveform.peaks,
         origStroke,
         origFill,
         isOrigActive ? 1.75 : 1.0,
@@ -165,7 +173,7 @@ export default function WaveformCanvas({
     if (showProcessed && processedWaveform?.peaks && processedWaveform.peaks.length > 0) {
       const isProcActive = activeTrack === 'processed';
       drawEnvelope(
-        processedWaveform.preview?.peaks || processedWaveform.peaks,
+        useDetail ? (processedWaveform.preview?.peaks || processedWaveform.peaks) : processedWaveform.peaks,
         procStroke,
         procFill,
         isProcActive ? 1.75 : 1.0,
@@ -175,9 +183,9 @@ export default function WaveformCanvas({
     }
 
     // 3. Draw Playback Head
-    // The preview is anchored at the start of the signal, so a full-recording
+    // The detail view is anchored to a short window, so a full-recording
     // playhead would be misleading once playback has moved beyond it.
-    if (showPlayhead && duration > 0 && !previewDuration) {
+    if (showPlayhead && duration > 0 && !useDetail) {
       const playX = Math.max(0, Math.min(width, (currentTime / duration) * width));
       const playheadColor = isDark ? '#fbbf24' : '#d97706';
 
@@ -220,10 +228,13 @@ export default function WaveformCanvas({
     customOrigColor,
     customProcColor,
     showPlayhead,
+    useDetail,
+    displayDuration,
+    displayStart,
   ]);
 
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
-    if (!onSeek || duration <= 0) return;
+    if (!onSeek || duration <= 0 || useDetail) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -232,14 +243,59 @@ export default function WaveformCanvas({
     onSeek(ratio * duration);
   };
 
+  const nearestAmplitude = (waveform: WaveformPayload | undefined, ratio: number): number | null => {
+    if (!waveform) return null;
+    const peaks = useDetail ? (waveform.preview?.peaks || waveform.peaks) : waveform.peaks;
+    if (!peaks || peaks.length < 2) return null;
+    const numBuckets = Math.floor(peaks.length / 2);
+    const idx = Math.max(0, Math.min(numBuckets - 1, Math.floor(ratio * numBuckets)));
+    const lo = peaks[idx * 2];
+    const hi = peaks[idx * 2 + 1];
+    return Math.abs(hi) > Math.abs(lo) ? hi : lo;
+  };
+
+  const handleMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
+    if (!showHoverReadout) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, x / rect.width));
+    const time = displayStart + ratio * (displayDuration || 0);
+    setHoverInfo({
+      x,
+      time,
+      origVal: showOriginal ? nearestAmplitude(originalWaveform, ratio) : null,
+      procVal: showProcessed ? nearestAmplitude(processedWaveform, ratio) : null,
+    });
+  };
+
+  const handleMouseLeave = () => setHoverInfo(null);
+
   return (
-    <div className={`relative w-full overflow-hidden select-none cursor-pointer ${className}`}>
+    <div className={`relative w-full overflow-hidden select-none ${useDetail ? '' : 'cursor-pointer'} ${className}`}>
       <canvas
         ref={canvasRef}
         onClick={handleCanvasClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{ width: '100%', height: `${height}px` }}
-        className="block rounded-ios-lg bg-transparent"
+        className={`block rounded-ios-lg bg-transparent ${showHoverReadout ? 'cursor-crosshair' : ''}`}
       />
+      {hoverInfo && (
+        <div
+          style={{ left: `${Math.min(hoverInfo.x + 10, 220)}px`, top: '8px' }}
+          className="pointer-events-none absolute z-20 bg-popover/95 backdrop-blur-md px-2.5 py-1.5 rounded-ios-md border border-border shadow-lg text-[11px] font-mono space-y-0.5"
+        >
+          <div className="font-semibold text-foreground">t = {hoverInfo.time.toFixed(4)}s</div>
+          {hoverInfo.origVal !== null && (
+            <div className="text-sky-400">orig: {hoverInfo.origVal.toFixed(3)}</div>
+          )}
+          {hoverInfo.procVal !== null && (
+            <div className="text-emerald-400">proc: {hoverInfo.procVal.toFixed(3)}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

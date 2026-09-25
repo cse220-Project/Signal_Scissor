@@ -8,6 +8,8 @@ interface SpectrogramCanvasProps {
   colorScheme?: 'cyan-emerald' | 'plasma' | 'fire';
   height?: number;
   className?: string;
+  /** Dynamic range shown below the data's own peak, in dB. Defaults to 80 dB (peak down to peak-80dB). */
+  dynamicRangeDb?: number;
 }
 
 export default function SpectrogramCanvas({
@@ -17,6 +19,7 @@ export default function SpectrogramCanvas({
   colorScheme = 'cyan-emerald',
   height = 180,
   className = '',
+  dynamicRangeDb = 80,
 }: SpectrogramCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -36,8 +39,9 @@ export default function SpectrogramCanvas({
     const width = rect.width;
     ctx.clearRect(0, 0, width, height);
 
+    const legendWidth = 54;
     const paddingLeft = 46;
-    const paddingRight = 16;
+    const paddingRight = 16 + legendWidth;
     const paddingTop = 22;
     const paddingBottom = 28;
     const plotWidth = width - paddingLeft - paddingRight;
@@ -73,12 +77,23 @@ export default function SpectrogramCanvas({
     const maxFreq = spectrogram.freqs[freqBins - 1] || 20000;
     const maxTime = spectrogram.times[timeFrames - 1] || 2.0;
 
-    // Intensity mapping (minDb = -80 dB, maxDb = 0 dB)
-    const minDb = -80;
-    const maxDb = 0;
+    // Intensity mapping: derived from the data's own peak, not a fixed absolute
+    // scale. scipy.signal.spectrogram returns power-spectral-density dB values
+    // that rarely approach 0 dB, so a hardcoded [-80, 0] range clamps almost
+    // everything to the same color (looks solid black). Using [peak - range, peak]
+    // instead keeps the plot readable regardless of the signal's absolute level.
+    let maxDb = -Infinity;
+    for (const row of spectrogram.mag_db) {
+      for (const v of row) {
+        if (Number.isFinite(v) && v > maxDb) maxDb = v;
+      }
+    }
+    if (!Number.isFinite(maxDb)) maxDb = 0;
+    const minDb = maxDb - dynamicRangeDb;
 
     const getColor = (db: number) => {
-      const norm = Math.max(0, Math.min(1, (db - minDb) / (maxDb - minDb)));
+      const safeDb = Number.isFinite(db) ? db : minDb;
+      const norm = Math.max(0, Math.min(1, (safeDb - minDb) / (maxDb - minDb || 1)));
       if (colorScheme === 'plasma') {
         // Plasma heatmap: Dark Purple -> Red -> Orange -> Yellow -> White
         if (norm < 0.25) {
@@ -159,7 +174,34 @@ export default function SpectrogramCanvas({
       const x = paddingLeft + (i / tTicks) * plotWidth;
       ctx.fillText(`${t.toFixed(1)}s`, x, height - 8);
     }
-  }, [spectrogram, title, subtitle, colorScheme, height]);
+
+    // Colorbar legend: gradient strip + dB labels, so the color scale is never ambiguous
+    const legendX = width - legendWidth + 8;
+    const legendBarWidth = 14;
+    const legendSteps = 40;
+    for (let i = 0; i < legendSteps; i++) {
+      const norm = i / (legendSteps - 1);
+      const db = minDb + norm * (maxDb - minDb);
+      ctx.fillStyle = getColor(db);
+      const y = paddingTop + plotHeight - (i / (legendSteps - 1)) * plotHeight;
+      const stepH = plotHeight / legendSteps + 1;
+      ctx.fillRect(legendX, y - stepH / 2, legendBarWidth, stepH);
+    }
+    ctx.strokeStyle = gridColor;
+    ctx.strokeRect(legendX, paddingTop, legendBarWidth, plotHeight);
+
+    ctx.font = '9px "IBM Plex Mono", monospace';
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'left';
+    ctx.fillText(`${Math.round(maxDb)}`, legendX + legendBarWidth + 3, paddingTop + 4);
+    ctx.fillText(`${Math.round(minDb)}`, legendX + legendBarWidth + 3, paddingTop + plotHeight);
+    ctx.save();
+    ctx.translate(width - 8, paddingTop + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('Magnitude (dB)', 0, 0);
+    ctx.restore();
+  }, [spectrogram, title, subtitle, colorScheme, height, dynamicRangeDb]);
 
   return (
     <div className={`relative w-full select-none ${className}`}>

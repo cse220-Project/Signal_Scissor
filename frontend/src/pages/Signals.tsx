@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAudioStore } from '../store/useAudioStore';
-import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Slider from '../components/ui/Slider';
@@ -11,8 +10,7 @@ import InfoBox from '../components/ui/InfoBox';
 
 export default function Signals() {
   const navigate = useNavigate();
-  const { signalState, duration, currentTime, activeTrack, loadPreset, uploadFile, isLoading } = useAudioStore();
-  const { isRecording, recordDuration, recordError, startRecording, stopRecording } = useAudioRecorder();
+  const { signalState, duration, currentTime, activeTrack, uploadFile, isLoading } = useAudioStore();
 
   // Custom tone synthesis state
   const [customFreq, setCustomFreq] = useState(440);
@@ -92,10 +90,11 @@ export default function Signals() {
         </Button>
       </div>
 
-      <InfoBox title="Three ways to get a signal" defaultOpen={false}>
+      <InfoBox title="Looking for presets or recording?" defaultOpen={false}>
         <p>
-          Dial in a custom tone with the synthesizer, pick a ready-made lab preset, or record your own voice with the microphone.
-          Whichever you choose, it becomes the "Active Signal" previewed on the right — click "Open in Studio" when you're ready to process it.
+          This page is for dialing in a <strong className="text-ink-primary font-medium">custom</strong> tone. Ready-made lab presets and microphone recording
+          both live on <strong className="text-ink-primary font-medium">Control Center</strong> now, so there's one place to load a signal from. Whichever
+          you choose, it becomes the "Active Signal" previewed on the right — click "Open in Studio" when you're ready to process it.
         </p>
       </InfoBox>
 
@@ -147,92 +146,25 @@ export default function Signals() {
             </div>
           </Card>
 
-          {/* Synthetic Signals Card */}
-          <Card variant="pastel-cream" className="space-y-4">
+          {/* Pointer card: presets + recording now live in one place (Control Center) */}
+          <Card variant="pastel-cream" className="space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-hairline">
-              <span className="material-symbols-outlined text-[19px] text-ink-primary">auto_graph</span>
-              <h3 className="text-[15px] font-semibold text-ink-primary">CSE 220 Test Presets</h3>
+              <span className="material-symbols-outlined text-[19px] text-ink-primary">dashboard</span>
+              <h3 className="text-[15px] font-semibold text-ink-primary">Presets &amp; Recording</h3>
             </div>
-
             <p className="text-[12px] text-ink-secondary leading-relaxed">
-              Deterministic laboratory signals designed for verifying FFT bin identification, bandpass filtering, and echo reflections.
+              The CSE 220 test presets (Multi-Tone, Pulse Burst, Tone+Noise, Harmonic Chord) and live microphone recording
+              both moved to <strong className="text-ink-primary font-medium">Control Center</strong>, so there's a single place to load a signal from.
             </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
-              <Button
-                variant="pill"
-                size="sm"
-                loading={isLoading}
-                onClick={() => loadPreset('tones')}
-              >
-                Multi-Tone (200, 1k, 2.5k)
-              </Button>
-
-              <Button
-                variant="pill"
-                size="sm"
-                loading={isLoading}
-                onClick={() => loadPreset('pulse')}
-              >
-                Hann Pulse Burst (440Hz)
-              </Button>
-
-              <Button
-                variant="pill"
-                size="sm"
-                loading={isLoading}
-                onClick={() => loadPreset('noise')}
-              >
-                Tone (300Hz) + Noise
-              </Button>
-
-              <Button
-                variant="pill"
-                size="sm"
-                loading={isLoading}
-                onClick={() => loadPreset('multitone')}
-              >
-                Harmonic Chord (4 Tones)
-              </Button>
-            </div>
-          </Card>
-
-          {/* Live Microphone Recording Card */}
-          <Card variant="pastel-green" className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-hairline">
-              <span className="material-symbols-outlined text-[19px] text-ink-primary">mic</span>
-              <h3 className="text-[15px] font-semibold text-ink-primary">Live Microphone Capture</h3>
-            </div>
-
-            <p className="text-[12px] text-ink-secondary leading-relaxed">
-              Capture speech, whistling, or acoustic sounds from your microphone to test real-world DSP workflows.
-            </p>
-
-            <div className="bg-surface-raised rounded-ios-lg p-4 text-center space-y-3">
-              <div className="flex items-center justify-center gap-2">
-                <span
-                  className={`w-3 h-3 rounded-full ${
-                    isRecording ? 'bg-error animate-pulse' : 'bg-ink-tertiary'
-                  }`}
-                />
-                <span className="font-mono text-[14px] font-medium text-ink-primary">
-                  {isRecording ? `${recordDuration.toFixed(1)}s Recording...` : 'Ready to record'}
-                </span>
-              </div>
-
-              {recordError && (
-                <p className="text-error text-[11px]">{recordError}</p>
-              )}
-
-              <Button
-                variant={isRecording ? 'destructive' : 'primary'}
-                size="md"
-                icon={isRecording ? 'stop' : 'mic'}
-                onClick={isRecording ? stopRecording : startRecording}
-              >
-                {isRecording ? 'Stop & Load Recording' : 'Start Recording'}
-              </Button>
-            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon="dashboard"
+              fullWidth
+              onClick={() => navigate('/')}
+            >
+              Open Control Center
+            </Button>
           </Card>
         </div>
 

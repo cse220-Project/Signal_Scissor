@@ -1,0 +1,10 @@
+% Slide 6 -- Implementation Decisions (presenter: Safwan, ~30s)
+\begin{frame}{Key Implementation Decisions}
+  \begin{itemize}
+    \item \alert{3 input sources, 1 pipeline}: synthesizer (known ground-truth frequencies) $\cdot$ file (real-world audio) $\cdot$ mic (live input) --- all normalized identically before processing
+    \item \alert{11 Real-Life Application presets} (telephone filter, hum notch, reverb, hearing-aid boost, \ldots) call the \emph{same} filter/effects functions --- just curated parameters, not a separate engine
+    \item Spectrum always plotted \alert{0 to $f_s/2$} (Nyquist) --- correct one-sided FFT magnitude
+    \item Convolution echo output is \alert{soft-clipped with $\tanh(\cdot)$}, not hard-normalized --- preserves the decaying reflection tail instead of squashing it flat
+    \item \alert{Challenge solved}: STFT spectrogram rendered solid black --- root cause was a fixed $-80$ to $0$\,dB color scale vs.\ SciPy's PSD output ($\approx\!-120$ to $-60$\,dB); fixed by scaling color range to the data's own peak
+  \end{itemize}
+\end{frame}

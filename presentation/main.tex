@@ -1,0 +1,51 @@
+% Signal Scissors -- CSE 220 Final Project Presentation
+% Compile with pdflatex (or upload this whole `presentation/` folder to Overleaf
+% as a project and set main.tex as the main document).
+\documentclass[aspectratio=169,10pt]{beamer}
+
+\usetheme{metropolis}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, backgrounds}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+
+% ---- Colors: clean, modern, high-contrast accent (works in light & projector) ----
+\definecolor{ssBlue}{HTML}{2563EB}
+\definecolor{ssTeal}{HTML}{0EA5A4}
+\definecolor{ssInk}{HTML}{111827}
+\definecolor{ssGray}{HTML}{6B7280}
+
+\setbeamercolor{palette primary}{bg=ssBlue, fg=white}
+\setbeamercolor{frametitle}{bg=ssBlue, fg=white}
+\setbeamercolor{progress bar}{fg=ssTeal, bg=ssGray!25}
+\setbeamercolor{normal text}{fg=ssInk}
+\setbeamercolor{alerted text}{fg=ssBlue}
+\setbeamertemplate{frame footer}{Signal Scissors --- CSE 220}
+\metroset{block=fill, progressbar=frametitle, numbering=fraction, sectionpage=none}
+
+% Consistent small helper for source-file citations under diagrams/bullets
+\newcommand{\srcnote}[1]{{\scriptsize\color{ssGray}\texttt{#1}}}
+
+\title{Signal Scissors}
+\subtitle{An Interactive Workstation for Signals \& LTI Systems}
+\author{Al Arafat Alif \textbar\ 2305062 \and Safwan Bin Ahmadul Hoque \textbar\ 2305087}
+\institute{CSE 220 --- Signals \& Systems Sessional \\ Department of CSE, BUET}
+\date{Final Project Evaluation}
+
+\begin{document}
+
+\input{sections/01_title}
+\input{sections/02_motivation}
+\input{sections/03_theory}
+\input{sections/04_architecture}
+\input{sections/05_features}
+\input{sections/06_implementation}
+\input{sections/07_results}
+\input{sections/08_demo}
+\input{sections/09_conclusion}
+
+\end{document}
