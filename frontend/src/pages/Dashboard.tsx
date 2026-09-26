@@ -4,7 +4,6 @@ import { useAudioStore } from '../store/useAudioStore';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import Slider from '../components/ui/Slider';
 import InfoBox from '../components/ui/InfoBox';
 import SignalStatusBar from '../components/ui/SignalStatusBar';
 
@@ -14,9 +13,9 @@ export default function Dashboard() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [sourceTab, setSourceTab] = useState<'browse' | 'record'>('browse');
-  const [recordMaxDuration, setRecordMaxDuration] = useState(5);
   const {
     isRecording,
+    isFinalizing,
     recordDuration,
     recordError,
     previewUrl,
@@ -26,7 +25,7 @@ export default function Dashboard() {
     confirmRecording,
     discardRecording,
     downloadRecording,
-  } = useAudioRecorder({ maxDurationSec: recordMaxDuration, autoUpload: false });
+  } = useAudioRecorder({ autoUpload: false });
 
   const handleUseRecording = async () => {
     const success = await confirmRecording();
@@ -181,7 +180,7 @@ export default function Dashboard() {
                     <div>
                       <h3 className="text-[16px] font-semibold text-ink-primary mb-1">
                         {isRecording
-                          ? `Recording… ${recordDuration.toFixed(1)}s / ${recordMaxDuration}s`
+                          ? `Recording… ${recordDuration.toFixed(1)}s`
                           : 'Record From Microphone'}
                       </h3>
                       <p className="text-[13px] text-ink-secondary max-w-xs mx-auto">
@@ -192,23 +191,14 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="max-w-xs mx-auto">
-                    <Slider
-                      label="Max Recording Duration"
-                      help="Recording stops automatically at this length. You can also click Stop earlier at any time."
-                      value={recordMaxDuration}
-                      min={1}
-                      max={60}
-                      step={1}
-                      unit="s"
-                      onChange={setRecordMaxDuration}
-                      disabled={isRecording}
-                    />
-                  </div>
-
                   {recordError && (
                     <p className="text-center text-error text-[12px] font-medium max-w-sm mx-auto">
                       {recordError}
+                    </p>
+                  )}
+                  {isFinalizing && (
+                    <p className="text-center text-ink-secondary text-[12px]">
+                      Preparing the recording for playback…
                     </p>
                   )}
 
@@ -218,6 +208,7 @@ export default function Dashboard() {
                       size="md"
                       icon={isRecording ? 'stop' : 'mic'}
                       onClick={isRecording ? stopRecording : startRecording}
+                      disabled={isFinalizing}
                     >
                       {isRecording ? 'Stop Recording' : 'Start Recording'}
                     </Button>

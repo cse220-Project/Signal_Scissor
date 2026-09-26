@@ -10,6 +10,11 @@ stay clearly separated:
 - convolution_echo  : y[n] = x[n] * h[n]            (convolution)
 """
 
+import subprocess
+import tempfile
+import os
+from pathlib import Path
+
 import numpy as np
 
 
@@ -175,6 +180,43 @@ import psola
 
 SEMITONES_IN_OCTAVE = 12
 
+
+def _autotalent_template_effect(audio, fs):
+    """Run the supplied PyAutoTune/Autotalent engine when its local wrapper exists."""
+    executable = Path(__file__).with_name("autotalent_cli.exe")
+    if not executable.is_file() or len(audio) < 4096:
+        return None
+    try:
+        with tempfile.TemporaryDirectory(prefix="signal-scissors-autotune-") as directory:
+            source = Path(directory) / "input.f32"
+            output = Path(directory) / "output.f32"
+            np.asarray(audio, dtype="<f4").tofile(source)
+            completed = subprocess.run(
+                [str(executable), str(source), str(output), str(int(fs))],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=30,
+                check=False,
+            )
+            if completed.returncode or not output.is_file():
+                return None
+            tuned = np.fromfile(output, dtype="<f4")
+            if len(tuned) != len(audio) or not np.isfinite(tuned).all():
+                return None
+            # Autotalent reports a fixed circular-buffer latency of N - 1.
+            # Compensate it before returning so the workstation's original and
+            # processed waveforms remain time-aligned for comparison.
+            latency = 4095 if fs >= 88200 else 2047
+            if len(tuned) > latency:
+                tuned = np.concatenate((tuned[latency:], np.zeros(latency, dtype=tuned.dtype)))
+            peak = float(np.max(np.abs(tuned)))
+            if peak > 1.0:
+                tuned *= 0.96 / peak
+            return tuned.astype(np.float32)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
 def degrees_from(scale: str):
     degrees = librosa.key_to_degrees(scale)
     degrees = np.concatenate((degrees, [degrees[0] + SEMITONES_IN_OCTAVE]))
@@ -202,100 +244,88 @@ def aclosest_pitch_from_scale(f0, scale="C:maj"):
 
 def autotune_voice_effect(signal, fs, scale="C:maj"):
     """
-    Instagram / TikTok Auto-Tune "Sing" Vocoder Engine:
-    Forces every word of spoken speech into a catchy musical song melody (C4-E4-G4-A4-C5).
-    Re-synthesizes speech with hard pitch quantization via PSOLA & Formant Vocoder.
+    Hard, scale-locked vocal correction with formants preserved by PSOLA.
+
+    Unlike the earlier melody generator, unvoiced or low-confidence frames are
+    never forced to an arbitrary high note.  Pitch tracking is bounded to the
+    human vocal range, cleaned in log-pitch space, and rate-limited before
+    synthesis.  The result has the quick, deliberate snap associated with
+    social-media Auto-Tune while avoiding brief octave jumps.
     """
     audio = np.asarray(signal, dtype=np.float64)
     if audio.ndim > 1:
         audio = audio[0]
-    if len(audio) == 0:
+    if len(audio) < 1024 or fs < 4000:
         return np.array(signal, copy=True)
 
-    # 1. Generate active song melody pitch contour f_target(t)
-    melody_notes = [261.63, 329.63, 392.00, 440.00, 392.00, 329.63, 523.25, 440.00]
-    note_dur = 0.30  # seconds per musical note in the melody
+    # The supplied Autotalent template is retained as an opt-in experiment.
+    # Its real-time circular-buffer design can produce artefacts when driven
+    # as an offline whole-file processor, so production defaults to the
+    # voice-preserving PSOLA path below.
+    if os.environ.get("SIGNAL_SCISSORS_USE_AUTOTALENT") == "1":
+        template_output = _autotalent_template_effect(audio, fs)
+        if template_output is not None:
+            return template_output
 
-    frame_length = 1024
-    hop_length = 256
-    fmin = librosa.note_to_hz('C2')
-    fmax = librosa.note_to_hz('C7')
-
-    # Track vocal pitch
+    frame_length = min(2048, max(512, 1 << int(np.floor(np.log2(min(len(audio), 2048))))))
+    hop_length = max(64, frame_length // 4)
+    fmin, fmax = 75.0, min(420.0, float(fs) / 2.2)
     try:
-        f0, _, _ = librosa.pyin(
+        f0, voiced, voiced_probability = librosa.pyin(
             audio,
             frame_length=frame_length,
             hop_length=hop_length,
             sr=int(fs),
             fmin=fmin,
-            fmax=fmax
+            fmax=fmax,
         )
     except Exception:
-        f0 = np.full((len(audio) // hop_length + 1,), np.nan)
+        return np.array(signal, copy=True)
 
-    # Convert detected pitch to closest scale notes
-    target_pitch = np.zeros_like(f0)
-    t_frames = np.arange(len(f0)) * (hop_length / float(fs))
+    # Reject weak/unvoiced frames rather than converting them to a melody note.
+    valid = (
+        np.asarray(voiced, dtype=bool)
+        & np.isfinite(f0)
+        & (f0 >= fmin)
+        & (f0 <= fmax)
+        & (np.asarray(voiced_probability) >= 0.65)
+    )
+    if np.count_nonzero(valid) < 3:
+        return np.array(signal, copy=True)
 
-    for k in range(len(f0)):
-        mel_freq = melody_notes[int(t_frames[k] / note_dur) % len(melody_notes)]
-        if np.isnan(f0[k]) or f0[k] <= 0:
-            target_pitch[k] = mel_freq
-        else:
-            snapped = closest_pitch_from_scale(f0[k], scale)
-            target_pitch[k] = snapped if not np.isnan(snapped) else mel_freq
+    frame_positions = np.arange(len(f0))
+    # Interpolate *only* to give PSOLA a continuous contour through consonants;
+    # endpoints are held, never replaced with an unrelated high target note.
+    stable_f0 = np.interp(frame_positions, frame_positions[valid], f0[valid])
+    stable_f0 = np.exp(scipy.signal.medfilt(np.log(stable_f0), kernel_size=5))
+    snapped = np.array([closest_pitch_from_scale(freq, scale) for freq in stable_f0])
+    snapped = np.clip(snapped, fmin, fmax)
 
-    # Smooth pitch contours with median filter
-    target_pitch = scipy.signal.medfilt(target_pitch, kernel_size=7)
+    # A 2-semitone/frame slew limiter rejects octave errors that occasionally
+    # escape pYIN, while retaining intentionally fast Auto-Tune transitions.
+    max_ratio = 2.0 ** (2.0 / 12.0)
+    target_pitch = snapped.copy()
+    for index in range(1, len(target_pitch)):
+        target_pitch[index] = np.clip(
+            target_pitch[index], target_pitch[index - 1] / max_ratio,
+            target_pitch[index - 1] * max_ratio,
+        )
+    target_pitch = scipy.signal.medfilt(target_pitch, kernel_size=3)
 
-    # 2. Re-synthesize pitch with PSOLA
     try:
         psola_out = psola.vocode(audio, sample_rate=int(fs), target_pitch=target_pitch, fmin=fmin, fmax=fmax)
     except Exception:
-        psola_out = audio
+        return np.array(signal, copy=True)
 
-    # 3. Formant Vocoding for intense T-Pain / Instagram Sing Vocoder Effect
-    t = np.arange(len(audio)) / float(fs)
-    carrier = np.zeros_like(t)
-    phase_acc = 0.0
-    for i in range(len(t)):
-        k_idx = min(int(i / hop_length), len(target_pitch) - 1)
-        freq = target_pitch[k_idx] if target_pitch[k_idx] > 0 else 261.63
-        phase_acc += 2.0 * np.pi * freq / fs
-        carrier[i] = (
-            1.00 * np.sin(phase_acc) +
-            0.60 * np.sin(2 * phase_acc) +
-            0.30 * np.sin(3 * phase_acc) +
-            0.15 * np.sin(4 * phase_acc)
-        )
-
-    # STFT Formant envelope modulation
-    n_fft = 512
-    hop = 128
-    n_frames = (len(audio) - n_fft) // hop + 1
-    vocoded_out = np.zeros_like(audio)
-    window = np.hanning(n_fft)
-
-    for i in range(n_frames):
-        start = i * hop
-        speech_frame = audio[start : start + n_fft] * window
-        carrier_frame = carrier[start : start + n_fft] * window
-
-        speech_mag = np.abs(np.fft.rfft(speech_frame))
-        env = scipy.signal.medfilt(speech_mag, kernel_size=11)
-
-        carrier_fft = np.fft.rfft(carrier_frame)
-        carrier_phase = np.angle(carrier_fft)
-
-        vocoded_fft = env * np.exp(1j * carrier_phase)
-        vocoded_out[start : start + n_fft] += np.fft.irfft(vocoded_fft) * window
-
-    # Mix 40% PSOLA + 45% Formant Vocoder + 15% original vocal crispness
-    final_output = 0.40 * psola_out + 0.45 * vocoded_out + 0.15 * audio
+    psola_out = np.asarray(psola_out, dtype=np.float64)
+    if len(psola_out) != len(audio):
+        psola_out = np.interp(np.linspace(0, len(psola_out) - 1, len(audio)), np.arange(len(psola_out)), psola_out)
+    # Preserve the actual vocal signal. A small dry blend restores consonants
+    # and avoids the metallic artifacts caused by a synthetic carrier.
+    final_output = 0.92 * psola_out + 0.08 * audio
     max_val = np.max(np.abs(final_output))
     if max_val > 0:
-        final_output = final_output / max_val
+        final_output = 0.96 * final_output / max_val
 
     return final_output.astype(np.float32)
 
@@ -338,4 +368,28 @@ def monster_voice_effect(signal, fs):
     Monster / Deep Villain Voice Effect (Low pitch + sub-bass boost).
     """
     return pitch_shift(signal, fs, semitones=-7.0)
-
+
+
+def megaphone_voice_effect(signal, fs):
+    """Lo-fi public-address speaker: narrow speech band plus soft saturation."""
+    audio = np.asarray(signal, dtype=np.float64)
+    if len(audio) < 16:
+        return audio.astype(np.float32)
+    high = min(3400.0, fs * 0.43)
+    low = min(350.0, high * 0.45)
+    sos = scipy.signal.butter(4, [low, high], btype="bandpass", fs=fs, output="sos")
+    filtered = scipy.signal.sosfiltfilt(sos, audio)
+    return (np.tanh(filtered * 3.0) * 0.92).astype(np.float32)
+
+
+def underwater_voice_effect(signal, fs):
+    """Muffled submerged sound: low-pass absorption with slow pressure wobble."""
+    audio = np.asarray(signal, dtype=np.float64)
+    if len(audio) < 16:
+        return audio.astype(np.float32)
+    cutoff = min(900.0, fs * 0.38)
+    sos = scipy.signal.butter(5, cutoff, btype="lowpass", fs=fs, output="sos")
+    muffled = scipy.signal.sosfiltfilt(sos, audio)
+    wobble = 0.82 + 0.12 * np.sin(2 * np.pi * 0.55 * np.arange(len(audio)) / fs)
+    return (muffled * wobble).astype(np.float32)
+

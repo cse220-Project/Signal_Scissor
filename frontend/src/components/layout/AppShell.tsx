@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { SidebarProvider } from '../../context/SidebarContext';
 import SideNav from './SideNav';
 import TopBar from './TopBar';
@@ -22,6 +22,11 @@ const bottomNavItems = [
 ];
 
 export default function AppShell({ children }: AppShellProps) {
+  const { pathname } = useLocation();
+  // About has its own intentionally expressive layout; keep the quieter workspace
+  // treatment for the task-oriented screens only.
+  const isAboutPage = pathname === '/about';
+
   return (
     <SidebarProvider>
       {/* Global Frozen Loading Overlay & Alert Modal */}
@@ -35,7 +40,7 @@ export default function AppShell({ children }: AppShellProps) {
         always get their own reserved space and can never render on top of page
         content, at any scroll position or viewport size.
       */}
-      <div className="app-shell-background flex h-dvh bg-[var(--background)] text-[var(--foreground)]">
+      <div className={`app-shell-background flex h-dvh bg-[var(--background)] text-[var(--foreground)]${isAboutPage ? '' : ' quiet-workspace'}`}>
         {/* Desktop Sidebar */}
         <SideNav />
 

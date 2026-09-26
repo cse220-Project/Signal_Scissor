@@ -440,6 +440,44 @@ main .page-tabs > button { border-radius: var(--radius-sm); }
 
 button.rounded-pill { border-radius: var(--radius-sm); }
 
+/* Quiet workspace: hierarchy and breathing room without changing the palette or type.
+   About deliberately does not receive these task-screen refinements. */
+.quiet-workspace #main-content {
+  scroll-padding-top: 20px;
+}
+.quiet-workspace main > div {
+  padding-bottom: 28px;
+}
+.quiet-workspace main > div > header:first-child,
+.quiet-workspace main > div > div:first-child:has(h1) {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.quiet-workspace .rounded-ios-2xl {
+  box-shadow: none;
+}
+.quiet-workspace .rounded-ios-2xl:hover {
+  box-shadow: 0 2px 6px rgb(31 42 68 / 4%);
+}
+.quiet-workspace .page-tabs {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+}
+.quiet-workspace .page-tabs > button {
+  flex: 0 1 auto;
+}
+.quiet-workspace .panel-heading,
+.quiet-workspace [class*='justify-between'] {
+  row-gap: 10px;
+}
+
+@media (max-width: 639px) {
+  .quiet-workspace main > div { padding-bottom: 16px; }
+  .quiet-workspace .page-tabs { width: 100%; }
+  .quiet-workspace .page-tabs > button { flex: 1 1 0; }
+}
+
 @media (max-width: 639px) {
   .metric-table th, .metric-table td { padding: 10px 12px; }
   main > div > div:first-child:has(h1) > div:last-child { flex-wrap: wrap; }

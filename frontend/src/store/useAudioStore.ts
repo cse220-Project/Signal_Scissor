@@ -52,6 +52,7 @@ interface AudioStoreState {
   resetToOriginal: () => Promise<void>;
   updateImpulseResponse: () => Promise<void>;
   applyRealLifePreset: (preset: RealLifeAppPreset, targetTrack?: 'original' | 'processed') => Promise<void>;
+  setNoiseReducedState: (data: SignalStateResponse) => void;
 
   // Playback setters
   setIsPlaying: (playing: boolean) => void;
@@ -316,6 +317,15 @@ export const useAudioStore = create<AudioStoreState>((set, get) => ({
       set({ isLoading: false });
     }
   },
+
+  setNoiseReducedState: (data) => set({
+    signalState: data,
+    activeTrack: 'processed',
+    currentTime: 0,
+    isPlaying: false,
+    duration: data.processed_duration || data.duration || get().duration,
+    audioVersion: Date.now(),
+  }),
 
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setActiveTrack: (track) => set({ activeTrack: track }),

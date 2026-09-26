@@ -14,6 +14,7 @@ export default function Compare() {
 
   const [isLogScale, setIsLogScale] = useState(true);
   const [spectrumViewMode, setSpectrumViewMode] = useState<'both' | 'original' | 'processed'>('both');
+  const [waveformViewMode, setWaveformViewMode] = useState<'both' | 'original' | 'processed'>('both');
   const [spectrogramRangeDb, setSpectrogramRangeDb] = useState(80);
 
   const procStats = signalState?.stats;
@@ -299,6 +300,26 @@ export default function Compare() {
                 3. Time-Domain Waveform Comparison x[n] vs y[n]
               </h3>
             </div>
+            <div className="flex items-center gap-1 bg-secondary p-1 rounded-ios-lg border border-border">
+              <button
+                onClick={() => setWaveformViewMode('both')}
+                className={`px-2.5 py-1 rounded-ios-md text-[11px] font-medium transition-all ${waveformViewMode === 'both' ? 'bg-primary text-primary-foreground font-semibold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Dual (A + B)
+              </button>
+              <button
+                onClick={() => { setWaveformViewMode('original'); handleTrackChange('original'); }}
+                className={`px-2.5 py-1 rounded-ios-md text-[11px] font-medium transition-all ${waveformViewMode === 'original' ? 'bg-sky-500 text-white font-semibold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Original Only
+              </button>
+              <button
+                onClick={() => { setWaveformViewMode('processed'); handleTrackChange('processed'); }}
+                className={`px-2.5 py-1 rounded-ios-md text-[11px] font-medium transition-all ${waveformViewMode === 'processed' ? 'bg-emerald-500 text-white font-semibold shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Processed Only
+              </button>
+            </div>
           </div>
           <p className="text-[12px] text-muted-foreground leading-relaxed">
             Temporal alignment showing normalized signal envelopes, peak clipping, and echo decay tails over time ({duration.toFixed(2)}s total).
@@ -312,6 +333,8 @@ export default function Compare() {
             activeTrack={activeTrack}
             height={170}
             onSeek={seekTo}
+            showOriginal={waveformViewMode !== 'processed'}
+            showProcessed={waveformViewMode !== 'original'}
             showHoverReadout
           />
 

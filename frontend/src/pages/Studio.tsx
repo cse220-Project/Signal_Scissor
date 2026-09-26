@@ -28,7 +28,7 @@ export default function Studio() {
   const { seekTo } = useAudioPlayer();
   const waveformCardRef = useRef<HTMLDivElement | null>(null);
   const spectrumCardRef = useRef<HTMLDivElement | null>(null);
-  const [waveZoom, setWaveZoom] = useState<'overview' | 'detail'>('detail');
+  const [waveZoom, setWaveZoom] = useState<'overview' | 'detail'>('overview');
   const [isLogScale, setIsLogScale] = useState(true);
   const [showSpectrogram, setShowSpectrogram] = useState(false);
   const [spectrogramRangeDb, setSpectrogramRangeDb] = useState(80);

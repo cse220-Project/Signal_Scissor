@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { SignalStateResponse } from "../types";
 
 export type NoiseLevel = "light" | "balanced" | "strong";
 export interface NoiseConfig {
@@ -23,6 +24,7 @@ export interface NoiseResult {
   expires_at: number;
   preview_url: string;
   download_url: string;
+  workstation_state?: SignalStateResponse;
 }
 
 export async function getNoiseConfig(

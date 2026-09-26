@@ -6,6 +6,7 @@ import tempfile
 from contextlib import asynccontextmanager, suppress
 from typing import Annotated
 
+import numpy as np
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from noise_config import FORMATS, NOISE_LEVELS, NoiseConfig
@@ -157,7 +158,8 @@ def remove_noise_current(
     target_track: Annotated[str, Form()] = "processed",
 ):
     try:
-        from server import state, signal_to_wav_bytes
+        from server import get_full_state_payload, state, signal_to_wav_bytes
+        from signal_io import load_wav
         if target_track == "original" and state.signal is not None:
             audio_data = state.signal
         elif state.processed is not None:
@@ -172,7 +174,22 @@ def remove_noise_current(
             )
         wav_bytes = signal_to_wav_bytes(audio_data, state.fs)
         filename = f"{state.source_name or 'current_audio'}_{target_track}.wav"
-        return service.process_bytes(wav_bytes, filename, level)
+        result = service.process_bytes(wav_bytes, filename, level)
+
+        # A denoise operation on the active workstation is a processing step,
+        # not merely a separate download. Preserve the selected input track and
+        # make the cleaned audio available as the processed track immediately.
+        cleaned_path = service.storage.resolve(result["id"])
+        if cleaned_path is None:
+            raise RuntimeError("Noise-reduction output was not available after processing.")
+        time_axis, cleaned_signal, sample_rate, num_channels = load_wav(cleaned_path)
+        state.t = time_axis
+        state.processed = cleaned_signal
+        state.freq_processed = np.array(cleaned_signal, copy=True)
+        state.fs = sample_rate
+        state.num_channels = num_channels
+        result["workstation_state"] = get_full_state_payload()
+        return result
     except NoiseError as exc:
         return JSONResponse(status_code=exc.status, content={"detail": exc.detail})
     except Exception as exc:

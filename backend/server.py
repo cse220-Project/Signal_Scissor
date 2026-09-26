@@ -39,6 +39,8 @@ from audio_effects import (
     robotic_voice_effect,
     baby_voice_effect,
     monster_voice_effect,
+    megaphone_voice_effect,
+    underwater_voice_effect,
 )
 from signal_analysis import rms, peak_amplitude, dominant_frequency
 from noise_routes import router as noise_router, NoiseUploadLimit
@@ -48,7 +50,9 @@ logger = logging.getLogger(__name__)
 app.include_router(noise_router)
 app.add_middleware(NoiseUploadLimit)
 
-MAX_AUDIO_UPLOAD_BYTES = 60 * 1024 * 1024
+MAX_AUDIO_UPLOAD_BYTES = 150 * 1024 * 1024
+MAX_AUDIO_DURATION_SECONDS = 7 * 60
+UPLOAD_DECODE_TIMEOUT_SECONDS = 8 * 60
 
 # Enable CORS for local Vite dev server
 app.add_middleware(
@@ -363,7 +367,7 @@ def load_test(preset: str = "tones"):
 
 @app.post("/api/signal/upload")
 async def upload_audio(file: UploadFile = File(...)):
-    """Load an audio file up to 60 MB, using FFmpeg for format decoding."""
+    """Load audio up to 150 MB and seven minutes, using FFmpeg when needed."""
     source_path = None
     decoded_path = None
     stage = "reading uploaded file"
@@ -376,7 +380,7 @@ async def upload_audio(file: UploadFile = File(...)):
             while chunk := await file.read(1024 * 1024):
                 size += len(chunk)
                 if size > MAX_AUDIO_UPLOAD_BYTES:
-                    raise HTTPException(status_code=413, detail="Audio files must be 60 MB or smaller.")
+                    raise HTTPException(status_code=413, detail="Audio files must be 150 MB or smaller.")
                 tmp.write(chunk)
         if size == 0:
             raise HTTPException(status_code=400, detail="Choose a non-empty audio file.")
@@ -394,7 +398,7 @@ async def upload_audio(file: UploadFile = File(...)):
                 subprocess.run(
                     [ffmpeg, "-nostdin", "-v", "error", "-y", "-i", source_path,
                      "-map", "0:a:0", "-vn", "-acodec", "pcm_s16le", decoded_path],
-                    check=True, capture_output=True, timeout=60,
+                    check=True, capture_output=True, timeout=UPLOAD_DECODE_TIMEOUT_SECONDS,
                 )
                 t, data, fs, num_channels = load_wav(decoded_path)
         except (ValueError, EOFError, OSError, subprocess.SubprocessError) as exc:
@@ -402,6 +406,8 @@ async def upload_audio(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Could not decode this audio file. Choose a valid audio file and try again.") from exc
         if fs <= 0 or data.size == 0 or not np.all(np.isfinite(data)):
             raise HTTPException(status_code=400, detail="The audio file must contain valid samples and a positive sample rate.")
+        if len(data) / fs > MAX_AUDIO_DURATION_SECONDS:
+            raise HTTPException(status_code=413, detail="Audio must be seven minutes or shorter.")
 
         stage = "calculating waveform and metadata"
         state.t = t
@@ -489,7 +495,7 @@ class EffectsRequest(BaseModel):
     echo_feedback: float = 55.0     # Echo decay percentage (0-90%)
     echo_taps: int = 3              # Number of echo reflections (1-6)
     echo_mix: float = 65.0          # Wet/dry mix percentage (0-100%)
-    voice_effect: Optional[str] = None # "autotune", "robotic", "baby", "monster"
+    voice_effect: Optional[str] = None # "autotune", "robotic", "baby", "monster", "megaphone", "underwater"
     target_track: Optional[str] = "original"  # "original" or "processed"
 
 
@@ -535,6 +541,10 @@ def apply_effects(req: EffectsRequest):
             result = baby_voice_effect(result, state.fs)
         elif ve == "monster":
             result = monster_voice_effect(result, state.fs)
+        elif ve == "megaphone":
+            result = megaphone_voice_effect(result, state.fs)
+        elif ve == "underwater":
+            result = underwater_voice_effect(result, state.fs)
 
     # 5. Convolution echo: y[n] = x[n] * h[n]
     if req.echo_enabled:
@@ -615,6 +625,10 @@ def apply_all(req: FullProcessRequest):
             result = baby_voice_effect(result, state.fs)
         elif ve == "monster":
             result = monster_voice_effect(result, state.fs)
+        elif ve == "megaphone":
+            result = megaphone_voice_effect(result, state.fs)
+        elif ve == "underwater":
+            result = underwater_voice_effect(result, state.fs)
 
     if req.echo_enabled:
         feedback = max(0.05, min(0.92, req.echo_feedback / 100.0))

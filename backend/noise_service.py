@@ -18,9 +18,9 @@ from noise_config import (
     NOISE_LEVELS,
     NOISE_PERCENTILE,
     NOISE_WINDOW_SECONDS,
-    filter_chain,
 )
 from noise_storage import NoiseStorage
+from spectral_gate import spectral_gate
 from scipy.io import wavfile
 
 logger = logging.getLogger(__name__)
@@ -46,12 +46,14 @@ def validate_upload(filename, content_type, level):
             422, "Choose a noise-reduction level: light, balanced, or strong."
         )
     suffix = Path(filename or "").suffix.lower()
+    if suffix not in FORMATS:
+        raise NoiseError(415, "Choose a WAV, MP3, M4A, or AAC audio file.")
     mime = (content_type or "application/octet-stream").split(";", 1)[0].strip().lower()
     if mime != "application/octet-stream" and not mime.startswith("audio/"):
         raise NoiseError(
             415, "Choose an audio file."
         )
-    return suffix if suffix and len(suffix) <= 12 else ".audio"
+    return suffix
 
 
 def validate_signature(header, suffix):
@@ -176,6 +178,11 @@ class NoiseService:
                     "Choose an audio-only file with one mono or stereo audio stream.",
                 )
             stream = audio[0]
+            if stream.get("codec_name") not in {
+                "aac", "mp3", "pcm_f32le", "pcm_f64le", "pcm_s16le",
+                "pcm_s24le", "pcm_s32le", "pcm_u8",
+            }:
+                raise NoiseError(415, "This audio codec is not supported.")
             rate = int(stream["sample_rate"])
             channels = int(stream["channels"])
             if not 8000 <= rate <= 96000 or channels not in (1, 2):
@@ -217,6 +224,8 @@ class NoiseService:
                         output.write(chunk)
                 if size == 0:
                     raise NoiseError(400, "The uploaded file is empty.")
+                with source.open("rb") as uploaded:
+                    validate_signature(uploaded.read(16), suffix)
                 rate, channels = self.inspect(source, ffprobe, deadline, suffix)
                 decoded = directory / "decoded.wav"
                 # Decode fully before filtering. A bounded extra second detects
@@ -277,33 +286,11 @@ class NoiseService:
                     if isinstance(samples, np.memmap):
                         samples._mmap.close()
                 cleaned = directory / "cleaned.wav"
-                self.run(
-                    [
-                        ffmpeg,
-                        "-nostdin",
-                        "-hide_banner",
-                        "-v",
-                        "error",
-                        "-xerror",
-                        "-protocol_whitelist",
-                        "file",
-                        "-threads",
-                        "1",
-                        "-i",
-                        str(decoded),
-                        "-filter_threads",
-                        "1",
-                        "-af",
-                        filter_chain(level, measured_floor, fs, frame_count),
-                        "-map_metadata",
-                        "-1",
-                        "-c:a",
-                        "pcm_s16le",
-                        str(cleaned),
-                    ],
-                    deadline,
-                    directory,
-                )
+                if time.monotonic() >= deadline:
+                    raise NoiseError(504, "Audio processing timed out. Try a shorter file.")
+                _, decoded_samples = wavfile.read(decoded)
+                denoised = spectral_gate(decoded_samples, fs, level)
+                wavfile.write(cleaned, fs, np.rint(np.clip(denoised, -1, 1) * 32767).astype(np.int16))
                 result_rate, result_samples = wavfile.read(cleaned, mmap=True)
                 try:
                     result_channels = (
@@ -364,6 +351,7 @@ class NoiseService:
                     output.write(content)
                 if len(content) == 0:
                     raise NoiseError(400, "The audio content is empty.")
+                validate_signature(content[:16], suffix)
                 rate, channels = self.inspect(source, ffprobe, deadline, suffix)
                 decoded = directory / "decoded.wav"
                 self.run(
@@ -424,33 +412,11 @@ class NoiseService:
                     if isinstance(samples, np.memmap):
                         samples._mmap.close()
                 cleaned = directory / "cleaned.wav"
-                self.run(
-                    [
-                        ffmpeg,
-                        "-nostdin",
-                        "-hide_banner",
-                        "-v",
-                        "error",
-                        "-xerror",
-                        "-protocol_whitelist",
-                        "file",
-                        "-threads",
-                        "1",
-                        "-i",
-                        str(decoded),
-                        "-filter_threads",
-                        "1",
-                        "-af",
-                        filter_chain(level, measured_floor, fs, frame_count),
-                        "-map_metadata",
-                        "-1",
-                        "-c:a",
-                        "pcm_s16le",
-                        str(cleaned),
-                    ],
-                    deadline,
-                    directory,
-                )
+                if time.monotonic() >= deadline:
+                    raise NoiseError(504, "Audio processing timed out. Try a shorter file.")
+                _, decoded_samples = wavfile.read(decoded)
+                denoised = spectral_gate(decoded_samples, fs, level)
+                wavfile.write(cleaned, fs, np.rint(np.clip(denoised, -1, 1) * 32767).astype(np.int16))
                 result_rate, result_samples = wavfile.read(cleaned, mmap=True)
                 try:
                     result_channels = (

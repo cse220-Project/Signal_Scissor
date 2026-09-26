@@ -171,15 +171,7 @@ class NoiseTests(unittest.TestCase):
 
     @unittest.skipUnless(HAS_FFMPEG, "Install FFmpeg")
     def test_failure_removes_partial_files(self):
-        run = self.service.run
-
-        def fail(args, *rest, **kwargs):
-            if "-af" in args:
-                Path(args[-1]).write_bytes(b"partial")
-                raise NoiseError(500, "Noise removal failed.")
-            return run(args, *rest, **kwargs)
-
-        with patch.object(self.service, "run", side_effect=fail):
+        with patch("noise_service.spectral_gate", side_effect=RuntimeError("gate failed")):
             self.assert_error(self.post(), 500)
 
     @unittest.skipUnless(HAS_FFMPEG, "Install FFmpeg")

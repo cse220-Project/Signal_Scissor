@@ -41,6 +41,8 @@ export default function EffectsControls() {
             { id: 'robotic', label: 'Robotic', icon: 'smart_toy' },
             { id: 'baby', label: 'Baby / Chipmunk', icon: 'child_care' },
             { id: 'monster', label: 'Deep Monster', icon: 'sentiment_very_dissatisfied' },
+            { id: 'megaphone', label: 'Megaphone', icon: 'campaign' },
+            { id: 'underwater', label: 'Underwater', icon: 'water' },
           ].map((item) => {
             const isSelected = (effects.voice_effect || 'none') === item.id;
             return (

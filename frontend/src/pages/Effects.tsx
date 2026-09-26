@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAudioStore } from '../store/useAudioStore';
 import { REAL_LIFE_PRESETS } from '../data/realLifePresets';
@@ -14,12 +14,18 @@ export default function Effects() {
   const { applyRealLifePreset, activeRealLifePreset, isLoading } = useAudioStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [targetTrack, setTargetTrack] = useState<'original' | 'processed'>('original');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const categories = ['All', 'Telecommunications', 'Audio Engineering', 'Acoustics', 'Biomedical / Audiology'];
 
-  const filteredPresets = selectedCategory === 'All'
-    ? REAL_LIFE_PRESETS
-    : REAL_LIFE_PRESETS.filter((p) => p.category === selectedCategory);
+  const filteredPresets = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return REAL_LIFE_PRESETS.filter((preset) => {
+      const inCategory = selectedCategory === 'All' || preset.category === selectedCategory;
+      const searchable = [preset.name, preset.category, preset.badge, preset.description, preset.realLifeUse].join(' ').toLowerCase();
+      return inCategory && (!query || searchable.includes(query));
+    });
+  }, [searchQuery, selectedCategory]);
 
   const handleApplyPreset = async (preset: any, target: 'original' | 'processed' = targetTrack) => {
     await applyRealLifePreset(preset, target);
@@ -61,7 +67,7 @@ export default function Effects() {
 
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-[15px] font-semibold text-ink-primary">
-          Real-Life Application Presets ({REAL_LIFE_PRESETS.length})
+          Acoustic FX Engine ({filteredPresets.length}{searchQuery ? ` of ${REAL_LIFE_PRESETS.length}` : ''})
         </h2>
       </div>
 
@@ -113,6 +119,20 @@ export default function Effects() {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="relative">
+            <label htmlFor="fx-search" className="sr-only">Search acoustic effects</label>
+            <span aria-hidden="true" className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-muted-foreground">search</span>
+            <input
+              id="fx-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search effects by name, category, use case, or DSP method…"
+              className="w-full rounded-ios-lg border border-border bg-card py-2.5 pl-10 pr-10 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-medium text-muted-foreground hover:text-foreground">Clear</button>}
           </div>
 
           {/* Presets Grid */}
@@ -199,6 +219,11 @@ export default function Effects() {
                 </Card>
               );
             })}
+            {filteredPresets.length === 0 && (
+              <div className="md:col-span-2 rounded-ios-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                No effects match “{searchQuery}”. Try another term or clear the search.
+              </div>
+            )}
           </div>
       </div>
 

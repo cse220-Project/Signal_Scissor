@@ -57,8 +57,6 @@ function friendlyRecordingError(err: unknown): string {
 }
 
 interface UseAudioRecorderOptions {
-  /** Auto-stop the recording once it reaches this many seconds. Undefined = no cap (manual stop only). */
-  maxDurationSec?: number;
   /**
    * When true (default, matches original behavior), the recording is encoded and
    * uploaded into the DSP pipeline automatically as soon as it stops.
@@ -70,9 +68,10 @@ interface UseAudioRecorderOptions {
 }
 
 export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
-  const { maxDurationSec, autoUpload = true } = options;
+  const { autoUpload = true } = options;
 
   const [isRecording, setIsRecording] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [recordDuration, setRecordDuration] = useState(0);
   const [recordError, setRecordError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -83,7 +82,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
   const timerRef = useRef<number | null>(null);
   const pendingBlobRef = useRef<Blob | null>(null);
 
-  const { uploadFile } = useAudioStore();
+  const { uploadFile, setError } = useAudioStore();
 
   useEffect(() => {
     return () => {
@@ -107,18 +106,33 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
     const blob = pendingBlobRef.current;
     if (!blob) return false;
     const file = new File([blob], `mic_recording_${Date.now()}.wav`, { type: 'audio/wav' });
-    const success = await uploadFile(file);
+    let success = false;
+    try {
+      success = await uploadFile(file);
+    } catch (err: unknown) {
+      setError(null);
+      setRecordError(friendlyRecordingError(err));
+      return false;
+    }
     if (success) {
       pendingBlobRef.current = null;
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
+      return true;
     }
+    // The store exposes errors globally for DSP controls. A recording failure is
+    // actionable in-place, so keep it beside the recording controls instead of
+    // showing a generic "Processing Failure" modal.
+    const uploadError = useAudioStore.getState().error;
+    setError(null);
+    setRecordError(uploadError || 'Could not load this recording into the DSP workspace. Please try again.');
     return success;
-  }, [uploadFile]);
+  }, [uploadFile, setError]);
 
   const startRecording = useCallback(async () => {
+    if (isFinalizing || mediaRecorderRef.current?.state === 'recording') return;
     setRecordError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -133,12 +147,19 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
       };
 
       mediaRecorder.onstop = async () => {
+        setIsFinalizing(true);
         try {
           const rawBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
+          if (!rawBlob.size) throw new Error('No audio was captured. Check the microphone and try again.');
           const arrayBuffer = await rawBlob.arrayBuffer();
           const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
           const decodeCtx = new AudioContextClass();
-          const decoded = await decodeCtx.decodeAudioData(arrayBuffer);
+          let decoded: AudioBuffer;
+          try {
+            decoded = await decodeCtx.decodeAudioData(arrayBuffer);
+          } finally {
+            if (decodeCtx.state !== 'closed') void decodeCtx.close();
+          }
 
           const numChannels = decoded.numberOfChannels;
           const length = decoded.length;
@@ -152,8 +173,6 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
           }
 
           const wavBlob = encodeWav(mono, decoded.sampleRate);
-          if (decodeCtx.state !== 'closed') void decodeCtx.close();
-
           pendingBlobRef.current = wavBlob;
           const url = URL.createObjectURL(wavBlob);
           setPreviewUrl((prev) => {
@@ -171,6 +190,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
             streamRef.current.getTracks().forEach((track) => track.stop());
             streamRef.current = null;
           }
+          mediaRecorderRef.current = null;
+          setIsFinalizing(false);
         }
       };
 
@@ -183,23 +204,17 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
       timerRef.current = window.setInterval(() => {
         const elapsed = (Date.now() - startTime) / 1000;
         setRecordDuration(elapsed);
-        if (maxDurationSec && elapsed >= maxDurationSec) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          mediaRecorder.stop();
-          setIsRecording(false);
-        }
       }, 100);
     } catch (err: unknown) {
       setRecordError(friendlyRecordingError(err));
       setIsRecording(false);
+      setIsFinalizing(false);
     }
-  }, [autoUpload, maxDurationSec, uploadPending]);
+  }, [autoUpload, isFinalizing, uploadPending]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
+      setIsFinalizing(true);
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (timerRef.current) {
@@ -236,6 +251,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
 
   return {
     isRecording,
+    isFinalizing,
     recordDuration,
     recordError,
     previewUrl,

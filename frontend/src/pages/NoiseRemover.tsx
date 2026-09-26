@@ -6,16 +6,12 @@ import { useAudioStore } from "../store/useAudioStore";
 import {
   getNoiseConfig,
   noiseMediaUrl,
-  removeNoise,
   removeNoiseCurrent,
   NoiseConfig,
   NoiseLevel,
   NoiseResult,
 } from "../api/noiseRemoval";
-import {
-  noiseErrorMessage,
-  validateNoiseFile,
-} from "../utils/noiseValidation.mjs";
+import { noiseErrorMessage } from "../utils/noiseValidation.mjs";
 
 const levels: { value: NoiseLevel; title: string; description: string }[] = [
   {
@@ -37,29 +33,24 @@ const levels: { value: NoiseLevel; title: string; description: string }[] = [
 
 export default function NoiseRemover() {
   const navigate = useNavigate();
-  const { signalState, duration, uploadFile } = useAudioStore();
+  const { signalState, duration, setNoiseReducedState } = useAudioStore();
 
-  const [sourceMode, setSourceMode] = useState<"current" | "upload">("current");
+  // Denoiser deliberately uses the active workstation source only. Keeping this
+  // fixed avoids presenting a second upload route beside Control Center.
+  const [sourceMode] = useState<"current" | "upload">("current");
   const [targetTrack, setTargetTrack] = useState<"original" | "processed">("processed");
   const [config, setConfig] = useState<NoiseConfig | null>(null);
   const [configError, setConfigError] = useState("");
   const [retry, setRetry] = useState(0);
-  const [file, setFile] = useState<File | null>(null);
-  const [originalUrl, setOriginalUrl] = useState("");
   const [level, setLevel] = useState<NoiseLevel>("balanced");
-  const [phase, setPhase] = useState<"idle" | "uploading" | "processing">(
-    "idle",
-  );
-  const [progress, setProgress] = useState<number | null>(0);
+  const [phase, setPhase] = useState<"idle" | "uploading" | "processing">("idle");
+  const [progress] = useState<number | null>(0);
   const [result, setResult] = useState<NoiseResult | null>(null);
   const [error, setError] = useState("");
   const [previewError, setPreviewError] = useState("");
-  const [originalError, setOriginalError] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-
   const input = useRef<HTMLInputElement>(null);
-  const objectUrl = useRef("");
   const request = useRef<AbortController | null>(null);
   const submitting = useRef(false);
   const busy = phase !== "idle";
@@ -80,53 +71,30 @@ export default function NoiseRemover() {
   useEffect(
     () => () => {
       request.current?.abort();
-      if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
     },
     [],
   );
 
-  function clearFile(resetInput = true) {
-    if (submitting.current) return;
-    if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
-    objectUrl.current = "";
+  // The dormant upload markup is retained only for backwards-compatible route
+  // code; there is no UI path to it. All user-facing denoising is current-audio.
+  function clearFile() {
     setFile(null);
-    setOriginalUrl("");
-    setResult(null);
     setError("");
-    setOriginalError("");
-    setPreviewError("");
-    setProgress(0);
-    if (resetInput && input.current) input.current.value = "";
+    if (input.current) input.current.value = "";
   }
 
   function chooseFile(selected: File | undefined) {
-    if (submitting.current || !config || !selected) return;
-    clearFile(false);
-    const validation = validateNoiseFile(selected, config);
-    if (validation) {
-      setError(validation);
-      return;
-    }
-    objectUrl.current = URL.createObjectURL(selected);
+    if (!selected) return;
     setFile(selected);
-    setOriginalUrl(objectUrl.current);
   }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (submitting.current || !config?.available) return;
 
-    if (sourceMode === "upload") {
-      const validation = validateNoiseFile(file, config);
-      if (validation || !file) {
-        setError(validation || "Choose an audio file first.");
-        return;
-      }
-    } else if (sourceMode === "current") {
-      if (!signalState?.loaded) {
-        setError("No active audio signal loaded in workstation.");
-        return;
-      }
+    if (!signalState?.loaded) {
+      setError("No active audio signal loaded in workstation.");
+      return;
     }
 
     submitting.current = true;
@@ -135,27 +103,14 @@ export default function NoiseRemover() {
     setError("");
     setPreviewError("");
     setResult(null);
-    setProgress(0);
-    setPhase(sourceMode === "upload" ? "uploading" : "processing");
+    setPhase("processing");
 
     try {
-      let cleaned: NoiseResult;
-      if (sourceMode === "upload" && file) {
-        cleaned = await removeNoise(
-          file,
-          level,
-          config,
-          controller.signal,
-          (percent) => {
-            if (controller.signal.aborted) return;
-            setProgress(percent);
-            if (percent === 100) setPhase("processing");
-          },
-        );
-      } else {
-        cleaned = await removeNoiseCurrent(level, config, controller.signal, targetTrack);
+      const cleaned = await removeNoiseCurrent(level, config, controller.signal, targetTrack);
+      if (!controller.signal.aborted) {
+        if (cleaned.workstation_state) setNoiseReducedState(cleaned.workstation_state);
+        setResult(cleaned);
       }
-      if (!controller.signal.aborted) setResult(cleaned);
     } catch (failure) {
       if (!controller.signal.aborted) setError(noiseErrorMessage(failure));
     } finally {
@@ -164,29 +119,13 @@ export default function NoiseRemover() {
     }
   }
 
-  async function loadCleanedIntoWorkstation() {
-    if (!result) return;
-    setIsImporting(true);
-    try {
-      const response = await fetch(noiseMediaUrl(result.preview_url));
-      const blob = await response.blob();
-      const file = new File([blob], result.output_filename, { type: "audio/wav" });
-      await uploadFile(file);
-      navigate("/studio");
-    } catch (err: unknown) {
-      setError("Failed to load cleaned audio into workstation.");
-    } finally {
-      setIsImporting(false);
-    }
-  }
-
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
       <header className="space-y-2">
         <h1 className="text-[28px] font-semibold tracking-tight">Noise Remover</h1>
         <p className="text-sm text-ink-secondary leading-relaxed max-w-2xl">
-          Reduce background noise, fan hum, and room static using FFmpeg DSP filters.
-          Clean a loaded recording or upload one.
+          Reduce background noise, fan hum, and room static with adaptive STFT spectral gating.
+          Clean the recording currently loaded in Control Center or the Studio.
         </p>
       </header>
 
@@ -217,40 +156,6 @@ export default function NoiseRemover() {
           {config.message}
         </p>
       )}
-
-      {/* Source Selection Tabs */}
-      <div className="flex bg-muted/60 p-1 rounded-ios-xl border border-border max-w-md">
-        <button
-          type="button"
-          onClick={() => {
-            setSourceMode("current");
-            setError("");
-          }}
-          className={`flex-1 py-2 text-xs font-semibold rounded-ios-lg transition-all flex items-center justify-center gap-1.5 ${
-            sourceMode === "current"
-              ? "bg-card text-foreground shadow-xs border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <span className="material-symbols-outlined text-[16px]">graphic_eq</span>
-          Active Workstation Audio
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setSourceMode("upload");
-            setError("");
-          }}
-          className={`flex-1 py-2 text-xs font-semibold rounded-ios-lg transition-all flex items-center justify-center gap-1.5 ${
-            sourceMode === "upload"
-              ? "bg-card text-foreground shadow-xs border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <span className="material-symbols-outlined text-[16px]">upload_file</span>
-          Upload Local File
-        </button>
-      </div>
 
       <form onSubmit={submit} className="space-y-5" aria-busy={busy}>
         <fieldset
@@ -317,7 +222,7 @@ export default function NoiseRemover() {
               ) : (
                 <div className="bg-accent text-accent-foreground p-4 rounded-ios-lg text-xs space-y-2 border border-border">
                   <p className="font-medium text-foreground">No audio currently loaded in the workstation.</p>
-                  <p className="text-muted-foreground">You can generate synthetic signals, record from mic, or switch to Upload mode.</p>
+                  <p className="text-muted-foreground">Load a file, generate a signal, or record audio in Control Center first.</p>
                   <div className="flex gap-2 pt-1">
                     <Button
                       type="button"
@@ -464,9 +369,7 @@ export default function NoiseRemover() {
               icon="graphic_eq"
               loading={busy}
               disabled={
-                !config?.available ||
-                (sourceMode === "upload" && !file) ||
-                (sourceMode === "current" && !signalState?.loaded)
+                !config?.available || !signalState?.loaded
               }
             >
               Remove Noise
@@ -495,17 +398,9 @@ export default function NoiseRemover() {
                 ? `Uploading audio${progress !== null ? ` · ${progress}%` : "…"}`
                 : "Removing background noise…"}
             </p>
-            {phase === "uploading" && (
-              <progress
-                aria-label="Upload progress"
-                value={progress ?? undefined}
-                max={100}
-                className="w-full accent-primary"
-              />
-            )}
             {phase === "processing" && (
               <p className="text-xs text-muted-foreground">
-                Processing audio with FFmpeg noise reduction filters…
+                Estimating the noise profile and applying spectral gating…
               </p>
             )}
           </div>
@@ -534,6 +429,10 @@ export default function NoiseRemover() {
               Level: {result.level}
             </span>
           </div>
+
+          <p className="text-sm text-muted-foreground">
+            The cleaned audio is now the workstation’s processed track. Your original track is unchanged.
+          </p>
 
           <audio
             key={result.id}
@@ -566,10 +465,9 @@ export default function NoiseRemover() {
                 variant="primary"
                 size="sm"
                 icon="science"
-                loading={isImporting}
-                onClick={loadCleanedIntoWorkstation}
+                onClick={() => navigate("/studio")}
               >
-                Load into DSP Studio
+                View in DSP Studio
               </Button>
               <a
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-ios-lg border border-primary bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"

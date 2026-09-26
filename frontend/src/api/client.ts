@@ -5,8 +5,12 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''; // Uses Vite proxy or 
 
 export const api = axios.create({
   baseURL: API_BASE,
-  timeout: 30000,
+  // Long recordings may need decoding, waveform analysis, and spectrogram
+  // generation before the upload endpoint can respond.
+  timeout: 480000,
 });
+
+export const MAX_AUDIO_UPLOAD_BYTES = 150 * 1024 * 1024;
 
 export async function getHealth(): Promise<{ status: string; service: string }> {
   const res = await api.get('/api/health');
@@ -20,7 +24,7 @@ export async function loadTestSignal(preset: string = 'tones'): Promise<SignalSt
 
 export async function uploadAudioFile(file: File): Promise<SignalStateResponse> {
   if (!file.size) throw new Error('Choose a non-empty audio file.');
-  if (file.size > 60 * 1024 * 1024) throw new Error('Audio files must be 60 MB or smaller.');
+  if (file.size > MAX_AUDIO_UPLOAD_BYTES) throw new Error('Audio files must be 150 MB or smaller.');
   const formData = new FormData();
   formData.append('file', file);
   const res = await api.post<SignalStateResponse>('/api/signal/upload', formData, {
